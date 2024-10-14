@@ -1,0 +1,126 @@
+Here's the complete HTML file with the provided access token integrated into the Dropbox API upload functionality. This single file includes HTML, CSS (via Tailwind), and JavaScript for uploading files to Dropbox.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InternetMod - Buy and Sell Files</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header -->
+    <header class="bg-blue-600 p-4">
+        <h1 class="text-white text-3xl font-bold">InternetMod</h1>
+        <nav class="mt-2">
+            <ul class="flex space-x-4">
+                <li><a href="#" class="text-white hover:underline">Home</a></li>
+                <li><a href="#" class="text-white hover:underline">Categories</a></li>
+                <li><a href="#" class="text-white hover:underline">Support</a></li>
+                <li><a href="#" class="text-white hover:underline">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto mt-6">
+        <h2 class="text-2xl font-bold mb-4">Available Files</h2>
+        
+        <!-- Search and Filter Section -->
+        <div class="mb-6">
+            <input type="text" placeholder="Search files..." class="border p-2 rounded w-full" />
+            <button class="mt-2 bg-blue-500 text-white py-2 px-4 rounded">Search</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- File Card Example -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold text-lg">Sample Document</h3>
+                <p class="text-gray-600">This file is useful for understanding the basics.</p>
+                <p class="font-bold mt-2">$9.99</p>
+                <button onclick="alert('Redirecting to payment page...');" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Buy Now</button>
+            </div>
+            <!-- Repeat similar blocks for other files -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold text-lg">Another File</h3>
+                <p class="text-gray-600">This file is great for advanced topics.</p>
+                <p class="font-bold mt-2">$14.99</p>
+                <button onclick="alert('Redirecting to payment page...');" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Buy Now</button>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold text-lg">More Files</h3>
+                <p class="text-gray-600">This file is excellent for in-depth studies.</p>
+                <p class="font-bold mt-2">$19.99</p>
+                <button onclick="alert('Redirecting to payment page...');" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Buy Now</button>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold">Upload a File</h2>
+            <input type="file" id="fileInput" class="border p-2 rounded w-full mt-2" />
+            <button id="uploadButton" class="mt-2 bg-blue-500 text-white py-2 px-4 rounded">Upload</button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-blue-600 p-4 text-center text-white mt-6">
+        <p>&copy; 2023 InternetMod. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const accessToken = 'sl.B-yHOrf0qQUPdiSrUvk2EgHaOm3-i61SyQLGJT6u0Lk0MOXYCGZ3MncWWoUV596Kuy6TyvWnTp3rUj5RE79IaV15eY2vn9caixiUOzSZAxOZ2i1HenZiTwOajNnuutw9G3NtTnlwLysD';
+
+            const url = 'https://content.dropboxapi.com/2/files/upload';
+            const headers = {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/octet-stream',
+                'Dropbox-API-Arg': JSON.stringify({
+                    path: '/' + file.name,
+                    mode: 'add',
+                    autorename: true,
+                    mute: false
+                })
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: file
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('File uploaded successfully: ' + data.name);
+                } else {
+                    alert('Error uploading file: ' + data.error_summary);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading file. Please try again.');
+            }
+        });
+    </script>
+
+</body>
+</html>
+```
+
+### Important Considerations:
+1. **Security**: Including your access token directly in the front-end code can pose a security risk, especially if this application is made public. It's better to handle sensitive information like access tokens on a server to avoid exposure.
+2. **Testing**: Save this code as an HTML file (e.g., `index.html`) and open it in a web browser to test the functionality. Ensure that the Dropbox API permissions for your app support file uploads.
+3. **Further Development**: As you develop your project, consider implementing user authentication and additional features to enhance security and functionality.
+
+This code now allows users to upload files directly to Dropbox while maintaining the existing features of your "InternetMod" project.
