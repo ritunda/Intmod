@@ -1,113 +1,517 @@
- <?php
-// Handle form submissions before any HTML output
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Add new category
-    if (!empty($_POST['categoryName'])) {
-        $newCategory = htmlspecialchars(trim($_POST['categoryName']));
-        if (!empty($newCategory)) {
-            file_put_contents('categories.txt', $newCategory . PHP_EOL, FILE_APPEND | LOCK_EX);
-            header("Location: " . $_SERVER['PHP_SELF']); // Redirect to avoid resubmission
-            exit;
-        }
-    }
-
-    // Add new book
-    if (!empty($_POST['bookTitle']) && !empty($_POST['bookLink']) && !empty($_POST['bookCategory'])) {
-        $title = htmlspecialchars(trim($_POST['bookTitle']));
-        $link = htmlspecialchars(trim($_POST['bookLink']));
-        $category = htmlspecialchars(trim($_POST['bookCategory']));
-
-        if (!empty($title) && !empty($link) && !empty($category)) {
-            $newBook = "$title|$link|$category\n";
-            file_put_contents('books.txt', $newBook, FILE_APPEND | LOCK_EX);
-            header("Location: " . $_SERVER['PHP_SELF']); // Redirect to avoid resubmission
-            exit;
-        }
-    }
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Sharing Platform</title>
-    <!-- Tailwind CSS via CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <title>BetTips - Betting Tips Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #0a0c0f; color: #fff; }
+        .navbar { background: #1a1e24; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fbbf24; }
+        .logo { font-size: 24px; font-weight: bold; color: #fbbf24; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #fff; text-decoration: none; cursor: pointer; }
+        .nav-links a:hover { color: #fbbf24; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .card { background: #1e1e1e; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #fbbf24; }
+        .btn { background: linear-gradient(45deg, #fbbf24, #f59e0b); border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #0a0c0f; }
+        .btn-outline { background: transparent; border: 1px solid #fbbf24; color: #fbbf24; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; background: #2a2e35; color: #fff; }
+        .flex { display: flex; gap: 20px; flex-wrap: wrap; }
+        .tip-card { background: #2a2e35; border-radius: 10px; padding: 15px; width: calc(33.333% - 14px); margin-bottom: 20px; }
+        .tip-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; }
+        .tip-card h3 { margin: 10px 0; }
+        .odds { color: #fbbf24; font-weight: bold; font-size: 1.2em; }
+        .ad-banner { margin: 20px 0; }
+        .ad-banner img { max-width: 100%; border-radius: 8px; }
+        .hidden { display: none; }
+        .balance { background: #fbbf24; color: #0a0c0f; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+        .error-box { background: #ff4444; color: white; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .success-box { background: #00C851; color: white; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .loading { text-align: center; padding: 20px; font-size: 18px; color: #fbbf24; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
-
-<header class="bg-white shadow p-5 flex justify-between items-center">
-    <div class="flex items-center">
-        <img src="logo.png" alt="Logo" class="h-10 mr-3">
-        <span class="text-2xl font-bold">LinkedIn Coin</span>
-    </div>
-    <div>
-        <span class="text-sm">"A tagline or symbol here"</span>
-    </div>
-</header>
-
-<main class="container mx-auto p-5">
-    <section class="mb-8">
-        <h2 class="text-xl font-semibold mb-4">Boards List</h2>
-        <div class="grid grid-cols-3 gap-4">
-            <?php
-            // Load categories from the text file
-            $categories = file('categories.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $books = file('books.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $booksByCategory = [];
-
-            // Organize books by categories
-            foreach ($books as $book) {
-                list($title, $link, $category) = explode('|', $book);
-                $booksByCategory[$category][] = ['title' => $title, 'link' => $link];
-            }
-
-            foreach ($categories as $category) {
-                echo "<div class='bg-white p-4 shadow rounded hover:bg-gray-50 cursor-pointer'>
-                        <h3 class='font-bold'>$category</h3>";
-                if (isset($booksByCategory[$category])) {
-                    echo "<ul class='mt-2'>";
-                    foreach ($booksByCategory[$category] as $book) {
-                        echo "<li><a href='{$book['link']}' class='text-blue-500 hover:underline'>{$book['title']}</a></li>";
-                    }
-                    echo "</ul>";
-                } else {
-                    echo "<p class='text-gray-500'>No books available.</p>";
-                }
-                echo "</div>";
-            }
-            ?>
+<body>
+    <div class="navbar">
+        <div class="logo">BetTips</div>
+        <div class="nav-links" id="navLinks">
+            <a onclick="showView('home')">Home</a>
+            <a onclick="showView('tips')">Tips</a>
+            <a id="navAdmin" class="hidden" onclick="showView('admin')">Admin</a>
+            <a id="navMod" class="hidden" onclick="showView('moderator')">Moderator</a>
+            <a id="navLogin" onclick="showView('login')">Login</a>
+            <a id="navLogout" class="hidden" onclick="logout()">Logout</a>
         </div>
-    </section>
+        <div id="balanceDisplay" class="balance hidden">0 credits</div>
+    </div>
 
-    <section class="mb-8">
-        <h2 class="text-xl font-semibold mb-4">Add a New Category</h2>
-        <form method="POST" action="">
-            <input type="text" name="categoryName" placeholder="Enter category name" required class="w-full p-2 mb-4 rounded bg-gray-200 border border-gray-300">
-            <button type="submit" class="w-full p-2 bg-blue-500 hover:bg-blue-400 rounded text-white">Add Category</button>
-        </form>
-    </section>
+    <div class="container" id="app">
+        <div class="loading">Loading...</div>
+    </div>
 
-    <section class="mb-8">
-        <h2 class="text-xl font-semibold mb-4">Add a New Book</h2>
-        <form method="POST" action="">
-            <input type="text" name="bookTitle" placeholder="Enter book title" required class="w-full p-2 mb-4 rounded bg-gray-200 border border-gray-300">
-            <input type="url" name="bookLink" placeholder="Enter PDF link" required class="w-full p-2 mb-4 rounded bg-gray-200 border border-gray-300">
-            <select name="bookCategory" class="w-full p-2 mb-4 rounded bg-gray-200 border border-gray-300" required>
-                <option value="">Select Category</option>
-                <?php
-                foreach ($categories as $category) {
-                    echo "<option value='$category'>$category</option>";
+    <script>
+        // Supabase config - REPLACE WITH YOUR CREDENTIALS
+        const SUPABASE_URL = 'https://twgvgzmzrjovedjoksml.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_oEtpELuvwj6_55EdeZqvsQ_jwjqdhpZ';
+        
+        // Initialize Supabase client (global variable)
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let userProfile = null;
+
+        // DOM elements
+        const app = document.getElementById('app');
+        const navLogin = document.getElementById('navLogin');
+        const navLogout = document.getElementById('navLogout');
+        const navAdmin = document.getElementById('navAdmin');
+        const navMod = document.getElementById('navMod');
+        const balanceDisplay = document.getElementById('balanceDisplay');
+
+        // Helper to show temporary message
+        function showMessage(message, isError = true) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error-box' : 'success-box';
+            div.textContent = message;
+            app.prepend(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        // Check session on load
+        window.addEventListener('load', async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                if (session) {
+                    currentUser = session.user;
+                    await loadUserProfile();
+                    updateNav();
+                    showView('home');
+                } else {
+                    showView('login');
                 }
-                ?>
-            </select>
-            <button type="submit" class="w-full p-2 bg-blue-500 hover:bg-blue-400 rounded text-white">Add Book</button>
-        </form>
-    </section>
-</main>
+            } catch (err) {
+                console.error('Session error:', err);
+                showMessage('Failed to connect to Supabase. Check your URL and anon key.', true);
+                showView('login');
+            }
+        });
 
+        // Auth state change listener
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                currentUser = session.user;
+                loadUserProfile().then(() => {
+                    updateNav();
+                    showView('home');
+                }).catch(err => {
+                    console.error('Profile load error:', err);
+                    showMessage('Error loading profile. Did you run the SQL setup?', true);
+                });
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                userProfile = null;
+                updateNav();
+                showView('login');
+            }
+        });
+
+        async function loadUserProfile() {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
+            if (error) {
+                if (error.code === '42P01') {
+                    throw new Error('Missing "profiles" table. Please run the SQL setup in Supabase.');
+                }
+                throw error;
+            }
+            userProfile = data;
+            if (userProfile) balanceDisplay.textContent = `${userProfile.balance} credits`;
+        }
+
+        function updateNav() {
+            if (currentUser && userProfile) {
+                navLogin.classList.add('hidden');
+                navLogout.classList.remove('hidden');
+                balanceDisplay.classList.remove('hidden');
+                navAdmin.classList.toggle('hidden', userProfile.role !== 'admin');
+                navMod.classList.toggle('hidden', !['moderator', 'admin'].includes(userProfile.role));
+            } else {
+                navLogin.classList.remove('hidden');
+                navLogout.classList.add('hidden');
+                balanceDisplay.classList.add('hidden');
+                navAdmin.classList.add('hidden');
+                navMod.classList.add('hidden');
+            }
+        }
+
+        function showView(view) {
+            if (!currentUser && view !== 'login') {
+                view = 'login';
+            }
+            // Clear app and show loading
+            app.innerHTML = '<div class="loading">Loading...</div>';
+            
+            // Use setTimeout to allow UI update, then render
+            setTimeout(() => {
+                try {
+                    switch(view) {
+                        case 'login': renderLogin(); break;
+                        case 'home': renderHome(); break;
+                        case 'tips': renderTips(); break;
+                        case 'admin': renderAdmin(); break;
+                        case 'moderator': renderModerator(); break;
+                        default: renderHome();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    app.innerHTML = `<div class="error-box">Error loading view: ${err.message}</div>`;
+                }
+            }, 10);
+        }
+
+        // ========== RENDER FUNCTIONS ==========
+
+        function renderLogin() {
+            app.innerHTML = `
+                <div class="card" style="max-width:400px; margin:50px auto;">
+                    <h2>Login</h2>
+                    <form id="loginForm">
+                        <input type="email" id="email" placeholder="Email" required>
+                        <input type="password" id="password" placeholder="Password" required>
+                        <button type="submit" class="btn">Login</button>
+                    </form>
+                    <p style="margin-top:15px;">Don't have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
+                </div>
+            `;
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                try {
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                } catch (err) {
+                    showMessage('Login failed: ' + err.message, true);
+                }
+            });
+        }
+
+        window.showSignup = function() {
+            app.innerHTML = `
+                <div class="card" style="max-width:400px; margin:50px auto;">
+                    <h2>Sign Up</h2>
+                    <form id="signupForm">
+                        <input type="text" id="username" placeholder="Username" required>
+                        <input type="email" id="email" placeholder="Email" required>
+                        <input type="password" id="password" placeholder="Password" required>
+                        <button type="submit" class="btn">Sign Up</button>
+                    </form>
+                    <p style="margin-top:15px;">Already have an account? <a href="#" onclick="showView('login')">Login</a></p>
+                </div>
+            `;
+            document.getElementById('signupForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const username = document.getElementById('username').value;
+                try {
+                    const { data, error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    // Create profile
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .insert({ id: data.user.id, username, role: 'user', balance: 0 });
+                    if (profileError) {
+                        // If profile insert fails, we should delete the auth user? For simplicity, just show error.
+                        throw profileError;
+                    }
+                    showMessage('Signup successful! Please login.', false);
+                    showView('login');
+                } catch (err) {
+                    showMessage('Signup error: ' + err.message, true);
+                }
+            });
+        };
+
+        async function renderHome() {
+            let tips = [], ads = [];
+            try {
+                const { data: t, error } = await supabase.from('tips').select('*').eq('approved', true).order('created_at', { ascending: false });
+                if (error && error.code !== '42P01') throw error;
+                tips = t || [];
+            } catch (err) {
+                console.warn('Tips fetch error:', err);
+                if (err.code === '42P01') showMessage('Tips table not found. Run SQL setup.', true);
+            }
+            try {
+                const { data: a, error } = await supabase.from('ads').select('*').eq('active', true);
+                if (error && error.code !== '42P01') throw error;
+                ads = a || [];
+            } catch (err) {
+                console.warn('Ads fetch error:', err);
+            }
+
+            let adsHtml = ads.map(ad => `
+                <div class="ad-banner">
+                    <a href="${ad.link_url || '#'}" target="_blank">
+                        <img src="${ad.image_url}" alt="Ad" style="max-width:100%; max-height:200px;">
+                    </a>
+                </div>
+            `).join('');
+
+            let tipsHtml = tips.length ? tips.map(tip => `
+                <div class="tip-card">
+                    <img src="${tip.image_url || 'https://via.placeholder.com/300x150'}" alt="tip">
+                    <h3>${tip.title}</h3>
+                    <p>${tip.description}</p>
+                    <div class="odds">Odds: ${tip.odds}</div>
+                    <button class="btn" onclick="placeBet(${tip.id})">Bet 10 credits</button>
+                </div>
+            `).join('') : '<p>No tips available yet.</p>';
+
+            app.innerHTML = `
+                <h2>Welcome, ${userProfile?.username || 'User'}!</h2>
+                ${adsHtml}
+                <h3>Latest Tips</h3>
+                <div class="flex">${tipsHtml}</div>
+                <div class="card">
+                    <h3>Deposit Credits</h3>
+                    <button class="btn" onclick="deposit()">Deposit (Simulated)</button>
+                </div>
+            `;
+        }
+
+        window.placeBet = async function(tipId) {
+            if (!currentUser || !userProfile) return;
+            if (userProfile.balance < 10) {
+                showMessage('Insufficient balance. Please deposit.', true);
+                return;
+            }
+            try {
+                const newBalance = userProfile.balance - 10;
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ balance: newBalance })
+                    .eq('id', currentUser.id);
+                if (error) throw error;
+                userProfile.balance = newBalance;
+                balanceDisplay.textContent = `${newBalance} credits`;
+                // Record transaction (optional)
+                try {
+                    await supabase.from('transactions').insert({
+                        user_id: currentUser.id,
+                        amount: -10,
+                        type: 'bet'
+                    });
+                } catch (e) { /* ignore if table missing */ }
+                showMessage('Bet placed! (Simulated)', false);
+            } catch (err) {
+                showMessage('Bet error: ' + err.message, true);
+            }
+        };
+
+        function renderTips() { renderHome(); }
+
+        window.deposit = async function() {
+            const amount = prompt('Enter amount to deposit (credits):', '100');
+            if (!amount) return;
+            try {
+                // Try RPC first (if function exists)
+                const { error } = await supabase.rpc('add_credits', { user_id: currentUser.id, amount: parseInt(amount) });
+                if (error) {
+                    // Fallback: direct update (if RLS allows)
+                    const newBalance = userProfile.balance + parseInt(amount);
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({ balance: newBalance })
+                        .eq('id', currentUser.id);
+                    if (updateError) throw updateError;
+                    userProfile.balance = newBalance;
+                    // Record transaction
+                    await supabase.from('transactions').insert({
+                        user_id: currentUser.id,
+                        amount: parseInt(amount),
+                        type: 'deposit'
+                    }).catch(() => {});
+                } else {
+                    // RPC succeeded, refresh profile
+                    await loadUserProfile();
+                }
+                balanceDisplay.textContent = `${userProfile.balance} credits`;
+                showMessage('Deposit successful!', false);
+            } catch (err) {
+                showMessage('Deposit error: ' + err.message, true);
+            }
+        };
+
+        async function renderAdmin() {
+            if (userProfile?.role !== 'admin') {
+                showMessage('Access denied', true);
+                return showView('home');
+            }
+            let pendingTips = [], ads = [], users = [];
+            try {
+                const { data: pt } = await supabase.from('tips').select('*').eq('approved', false);
+                pendingTips = pt || [];
+                const { data: ad } = await supabase.from('ads').select('*');
+                ads = ad || [];
+                const { data: u } = await supabase.from('profiles').select('*');
+                users = u || [];
+            } catch (err) {
+                showMessage('Error loading admin data: ' + err.message, true);
+            }
+
+            app.innerHTML = `
+                <h2>Admin Panel</h2>
+                <div class="card">
+                    <h3>Add New Tip</h3>
+                    <input type="text" id="tipTitle" placeholder="Title">
+                    <input type="text" id="tipOdds" placeholder="Odds (e.g., 2.10)">
+                    <input type="url" id="tipImage" placeholder="Image URL">
+                    <textarea id="tipDesc" placeholder="Description"></textarea>
+                    <button class="btn" onclick="addTip()">Post Tip</button>
+                </div>
+                <div class="card">
+                    <h3>Manage Ads</h3>
+                    <input type="url" id="adImage" placeholder="Ad Image URL">
+                    <input type="url" id="adLink" placeholder="Ad Link URL">
+                    <button class="btn" onclick="addAd()">Add Ad</button>
+                    <h4>Current Ads</h4>
+                    <div id="adsList">${ads.map(ad => `<div>${ad.image_url} <button onclick="deleteAd(${ad.id})">Delete</button></div>`).join('') || 'None'}</div>
+                </div>
+                <div class="card">
+                    <h3>Pending Tips</h3>
+                    <div>${pendingTips.map(tip => `
+                        <div>
+                            <p><strong>${tip.title}</strong> - ${tip.odds}</p>
+                            <button onclick="approveTip(${tip.id})">Approve</button>
+                            <button onclick="rejectTip(${tip.id})">Reject</button>
+                        </div>
+                    `).join('') || 'No pending tips'}</div>
+                </div>
+                <div class="card">
+                    <h3>Users</h3>
+                    <table>
+                        <tr><th>Username</th><th>Role</th><th>Balance</th><th>Action</th></tr>
+                        ${users.map(u => `
+                            <tr>
+                                <td>${u.username}</td>
+                                <td>${u.role}</td>
+                                <td>${u.balance}</td>
+                                <td><button onclick="setRole('${u.id}', 'moderator')">Make Moderator</button></td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            `;
+        }
+
+        window.addTip = async function() {
+            const title = document.getElementById('tipTitle').value;
+            const odds = document.getElementById('tipOdds').value;
+            const image_url = document.getElementById('tipImage').value;
+            const desc = document.getElementById('tipDesc').value;
+            try {
+                await supabase.from('tips').insert({
+                    title, odds, image_url, description: desc,
+                    created_by: currentUser.id,
+                    approved: false
+                });
+                showMessage('Tip added, pending approval', false);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error adding tip: ' + err.message, true);
+            }
+        };
+
+        window.addAd = async function() {
+            const image_url = document.getElementById('adImage').value;
+            const link_url = document.getElementById('adLink').value;
+            try {
+                await supabase.from('ads').insert({ image_url, link_url, active: true });
+                showMessage('Ad added', false);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error adding ad: ' + err.message, true);
+            }
+        };
+
+        window.deleteAd = async function(id) {
+            try {
+                await supabase.from('ads').delete().eq('id', id);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error deleting ad: ' + err.message, true);
+            }
+        };
+
+        window.approveTip = async function(id) {
+            try {
+                await supabase.from('tips').update({ approved: true }).eq('id', id);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error approving tip: ' + err.message, true);
+            }
+        };
+
+        window.rejectTip = async function(id) {
+            try {
+                await supabase.from('tips').delete().eq('id', id);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error rejecting tip: ' + err.message, true);
+            }
+        };
+
+        window.setRole = async function(userId, role) {
+            try {
+                await supabase.from('profiles').update({ role }).eq('id', userId);
+                renderAdmin();
+            } catch (err) {
+                showMessage('Error setting role: ' + err.message, true);
+            }
+        };
+
+        async function renderModerator() {
+            if (!['moderator', 'admin'].includes(userProfile?.role)) {
+                showMessage('Access denied', true);
+                return showView('home');
+            }
+            let pendingTips = [];
+            try {
+                const { data: pt } = await supabase.from('tips').select('*').eq('approved', false);
+                pendingTips = pt || [];
+            } catch (err) {
+                showMessage('Error loading pending tips: ' + err.message, true);
+            }
+            app.innerHTML = `
+                <h2>Moderator Panel</h2>
+                <div class="card">
+                    <h3>Pending Tips</h3>
+                    ${pendingTips.map(tip => `
+                        <div>
+                            <p><strong>${tip.title}</strong> - ${tip.odds}</p>
+                            <p>${tip.description}</p>
+                            <img src="${tip.image_url}" style="max-width:200px;">
+                            <button onclick="approveTip(${tip.id})">Approve</button>
+                            <button onclick="rejectTip(${tip.id})">Reject</button>
+                        </div>
+                    `).join('') || 'No pending tips'}
+                </div>
+            `;
+        }
+
+        window.logout = async function() {
+            await supabase.auth.signOut();
+        };
+
+        window.showView = showView;
+    </script>
 </body>
 </html>
