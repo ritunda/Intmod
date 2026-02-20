@@ -3,515 +3,847 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetTips - Betting Tips Platform</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background: #0a0c0f; color: #fff; }
-        .navbar { background: #1a1e24; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fbbf24; }
-        .logo { font-size: 24px; font-weight: bold; color: #fbbf24; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { color: #fff; text-decoration: none; cursor: pointer; }
-        .nav-links a:hover { color: #fbbf24; }
-        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
-        .card { background: #1e1e1e; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #fbbf24; }
-        .btn { background: linear-gradient(45deg, #fbbf24, #f59e0b); border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #0a0c0f; }
-        .btn-outline { background: transparent; border: 1px solid #fbbf24; color: #fbbf24; }
-        input, textarea, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; background: #2a2e35; color: #fff; }
-        .flex { display: flex; gap: 20px; flex-wrap: wrap; }
-        .tip-card { background: #2a2e35; border-radius: 10px; padding: 15px; width: calc(33.333% - 14px); margin-bottom: 20px; }
-        .tip-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; }
-        .tip-card h3 { margin: 10px 0; }
-        .odds { color: #fbbf24; font-weight: bold; font-size: 1.2em; }
-        .ad-banner { margin: 20px 0; }
-        .ad-banner img { max-width: 100%; border-radius: 8px; }
-        .hidden { display: none; }
-        .balance { background: #fbbf24; color: #0a0c0f; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
-        .error-box { background: #ff4444; color: white; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .success-box { background: #00C851; color: white; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .loading { text-align: center; padding: 20px; font-size: 18px; color: #fbbf24; }
-    </style>
+    <title>Channel · modern blog platform</title>
+    <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+        }
+        /* navbar */
+        .navbar {
+            background: white;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1877f2;
+        }
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e4e6eb;
+        }
+        .btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #1877f2;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #166fe5;
+        }
+        .btn-outline {
+            border: 1px solid #ced0d4;
+            background: white;
+        }
+        .btn-outline:hover {
+            background: #f0f2f5;
+        }
+        /* main layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        @media (min-width: 900px) {
+            .container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+        /* left sidebar */
+        .left-side {
+            flex: 0 0 260px;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .profile-card {
+            text-align: center;
+        }
+        .profile-card img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+        }
+        .profile-card h4 {
+            font-size: 1.2rem;
+        }
+        .profile-card p {
+            color: #65676b;
+            margin-bottom: 1rem;
+        }
+        /* main feed */
+        .feed {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        /* create post box */
+        .create-post {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .create-post input, .create-post textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e4e6eb;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            resize: none;
+        }
+        .create-post input {
+            border-radius: 30px;
+        }
+        .post-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        /* post card */
+        .post-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem 1rem 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .post-header img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .channel-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .channel-info p {
+            font-size: 0.85rem;
+            color: #65676b;
+        }
+        .post-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .post-thumbnail {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin: 0.5rem 0;
+        }
+        .post-stats {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            color: #65676b;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #e4e6eb;
+        }
+        .post-engagement {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 0;
+        }
+        .engagement-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 0.6rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #65676b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+        .engagement-btn:hover {
+            background: #f0f2f5;
+        }
+        .engagement-btn.liked {
+            color: #1877f2;
+        }
+        .engagement-btn.liked i {
+            font-weight: 900;
+        }
+        /* comment section */
+        .comment-section {
+            margin-top: 0.5rem;
+            border-top: 1px solid #e4e6eb;
+            padding-top: 1rem;
+        }
+        .comment {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .comment img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .comment-bubble {
+            background: #f0f2f5;
+            padding: 0.6rem 1rem;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            max-width: 80%;
+        }
+        .comment-bubble strong {
+            margin-right: 0.5rem;
+        }
+        .comment-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .comment-form input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid #e4e6eb;
+            border-radius: 30px;
+        }
+        /* right sidebar – ads & premium */
+        .right-side {
+            flex: 0 0 280px;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .ad-card {
+            background: #e4e6eb;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #4b4f56;
+            font-weight: 500;
+        }
+        .premium-badge {
+            background: linear-gradient(135deg, #f7b42c, #fcb045);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        /* auth modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .modal-content h2 {
+            margin-bottom: 1.5rem;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e4e6eb;
+            border-radius: 30px;
+        }
+        .switch-link {
+            color: #1877f2;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .error-message {
+            color: #c00;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body>
-    <div class="navbar">
-        <div class="logo">BetTips</div>
-        <div class="nav-links" id="navLinks">
-            <a onclick="showView('home')">Home</a>
-            <a onclick="showView('tips')">Tips</a>
-            <a id="navAdmin" class="hidden" onclick="showView('admin')">Admin</a>
-            <a id="navMod" class="hidden" onclick="showView('moderator')">Moderator</a>
-            <a id="navLogin" onclick="showView('login')">Login</a>
-            <a id="navLogout" class="hidden" onclick="logout()">Logout</a>
+    <div id="app">
+        <nav class="navbar">
+            <div class="logo">Channel</div>
+            <div class="nav-actions">
+                <button class="btn btn-outline" id="authBtn">Log in</button>
+                <img id="navbarAvatar" class="user-avatar hidden" src="" alt="avatar">
+            </div>
+        </nav>
+
+        <div class="container">
+            <aside class="left-side">
+                <div class="profile-card">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=Guest&size=80&background=random" alt="avatar">
+                    <h4 id="profileName">Guest</h4>
+                    <p id="profileUsername">@guest</p>
+                </div>
+            </aside>
+
+            <main class="feed">
+                <div class="create-post hidden" id="createPostBox">
+                    <input type="text" id="postTitle" placeholder="Post title...">
+                    <textarea id="postContent" placeholder="What's on your mind?" rows="2"></textarea>
+                    <input type="url" id="postThumbnail" placeholder="Image URL (optional)">
+                    <div class="post-actions">
+                        <button class="btn btn-primary" id="publishPost">Post</button>
+                    </div>
+                </div>
+                <div id="postsContainer"></div>
+            </main>
+
+            <aside class="right-side">
+                <div class="ad-card">
+                    <i class="fas fa-ad" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                    <p>Advertisement</p>
+                    <small>your brand here</small>
+                </div>
+                <div class="premium-badge">
+                    ⭐ Channel Premium ⭐<br>
+                    <small>No ads • exclusive content</small>
+                </div>
+                <div style="margin-top:1.5rem;">
+                    <div class="ad-card">📺 Paper View · $0.99</div>
+                </div>
+            </aside>
         </div>
-        <div id="balanceDisplay" class="balance hidden">0 credits</div>
+
+        <!-- Auth Modal -->
+        <div class="modal" id="authModal">
+            <div class="modal-content">
+                <h2 id="authModalTitle">Log in</h2>
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="password" placeholder="Password">
+                <button class="btn btn-primary" style="width:100%;" id="authActionBtn">Log in</button>
+                <p id="switchAuth" class="switch-link">Create new account</p>
+                <div id="authError" class="error-message"></div>
+            </div>
+        </div>
     </div>
 
-    <div class="container" id="app">
-        <div class="loading">Loading...</div>
-    </div>
-
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Supabase config - REPLACE WITH YOUR CREDENTIALS
-        const SUPABASE_URL = 'https://twgvgzmzrjovedjoksml.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_oEtpELuvwj6_55EdeZqvsQ_jwjqdhpZ';
-        
-        // Initialize Supabase client (global variable)
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        (function() {
+            // ==================== YOUR SUPABASE CONFIG ====================
+            const SUPABASE_URL = 'https://vcopwxjcjraddqwxmxkb.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_9b2BZuqv8hms1kXt9hBXnQ_GBCzLmSn';
 
-        let currentUser = null;
-        let userProfile = null;
+            const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // DOM elements
-        const app = document.getElementById('app');
-        const navLogin = document.getElementById('navLogin');
-        const navLogout = document.getElementById('navLogout');
-        const navAdmin = document.getElementById('navAdmin');
-        const navMod = document.getElementById('navMod');
-        const balanceDisplay = document.getElementById('balanceDisplay');
+            // ==================== STATE ====================
+            let currentUser = null;
+            let posts = [];
 
-        // Helper to show temporary message
-        function showMessage(message, isError = true) {
-            const div = document.createElement('div');
-            div.className = isError ? 'error-box' : 'success-box';
-            div.textContent = message;
-            app.prepend(div);
-            setTimeout(() => div.remove(), 5000);
-        }
+            // DOM elements
+            const authBtn = document.getElementById('authBtn');
+            const navbarAvatar = document.getElementById('navbarAvatar');
+            const profileAvatar = document.getElementById('profileAvatar');
+            const profileName = document.getElementById('profileName');
+            const profileUsername = document.getElementById('profileUsername');
+            const createPostBox = document.getElementById('createPostBox');
+            const postsContainer = document.getElementById('postsContainer');
+            const authModal = document.getElementById('authModal');
+            const authModalTitle = document.getElementById('authModalTitle');
+            const authActionBtn = document.getElementById('authActionBtn');
+            const switchAuth = document.getElementById('switchAuth');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const authError = document.getElementById('authError');
+            const publishPost = document.getElementById('publishPost');
+            const postTitle = document.getElementById('postTitle');
+            const postContent = document.getElementById('postContent');
+            const postThumbnail = document.getElementById('postThumbnail');
 
-        // Check session on load
-        window.addEventListener('load', async () => {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
-                if (session) {
-                    currentUser = session.user;
-                    await loadUserProfile();
-                    updateNav();
-                    showView('home');
-                } else {
-                    showView('login');
-                }
-            } catch (err) {
-                console.error('Session error:', err);
-                showMessage('Failed to connect to Supabase. Check your URL and anon key.', true);
-                showView('login');
+            let isLoginMode = true;
+
+            // Helper: show error in modal
+            function setAuthError(msg) {
+                authError.innerText = msg;
             }
-        });
 
-        // Auth state change listener
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN') {
-                currentUser = session.user;
-                loadUserProfile().then(() => {
-                    updateNav();
-                    showView('home');
-                }).catch(err => {
-                    console.error('Profile load error:', err);
-                    showMessage('Error loading profile. Did you run the SQL setup?', true);
-                });
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                userProfile = null;
-                updateNav();
-                showView('login');
+            // Modal controls
+            function showModal() {
+                authModal.classList.add('active');
+                setAuthError('');
             }
-        });
-
-        async function loadUserProfile() {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
-            if (error) {
-                if (error.code === '42P01') {
-                    throw new Error('Missing "profiles" table. Please run the SQL setup in Supabase.');
-                }
-                throw error;
+            function hideModal() {
+                authModal.classList.remove('active');
+                emailInput.value = '';
+                passwordInput.value = '';
+                setAuthError('');
             }
-            userProfile = data;
-            if (userProfile) balanceDisplay.textContent = `${userProfile.balance} credits`;
-        }
 
-        function updateNav() {
-            if (currentUser && userProfile) {
-                navLogin.classList.add('hidden');
-                navLogout.classList.remove('hidden');
-                balanceDisplay.classList.remove('hidden');
-                navAdmin.classList.toggle('hidden', userProfile.role !== 'admin');
-                navMod.classList.toggle('hidden', !['moderator', 'admin'].includes(userProfile.role));
-            } else {
-                navLogin.classList.remove('hidden');
-                navLogout.classList.add('hidden');
-                balanceDisplay.classList.add('hidden');
-                navAdmin.classList.add('hidden');
-                navMod.classList.add('hidden');
-            }
-        }
-
-        function showView(view) {
-            if (!currentUser && view !== 'login') {
-                view = 'login';
-            }
-            // Clear app and show loading
-            app.innerHTML = '<div class="loading">Loading...</div>';
-            
-            // Use setTimeout to allow UI update, then render
-            setTimeout(() => {
-                try {
-                    switch(view) {
-                        case 'login': renderLogin(); break;
-                        case 'home': renderHome(); break;
-                        case 'tips': renderTips(); break;
-                        case 'admin': renderAdmin(); break;
-                        case 'moderator': renderModerator(); break;
-                        default: renderHome();
-                    }
-                } catch (err) {
-                    console.error(err);
-                    app.innerHTML = `<div class="error-box">Error loading view: ${err.message}</div>`;
-                }
-            }, 10);
-        }
-
-        // ========== RENDER FUNCTIONS ==========
-
-        function renderLogin() {
-            app.innerHTML = `
-                <div class="card" style="max-width:400px; margin:50px auto;">
-                    <h2>Login</h2>
-                    <form id="loginForm">
-                        <input type="email" id="email" placeholder="Email" required>
-                        <input type="password" id="password" placeholder="Password" required>
-                        <button type="submit" class="btn">Login</button>
-                    </form>
-                    <p style="margin-top:15px;">Don't have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
-                </div>
-            `;
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                try {
-                    const { error } = await supabase.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                } catch (err) {
-                    showMessage('Login failed: ' + err.message, true);
-                }
-            });
-        }
-
-        window.showSignup = function() {
-            app.innerHTML = `
-                <div class="card" style="max-width:400px; margin:50px auto;">
-                    <h2>Sign Up</h2>
-                    <form id="signupForm">
-                        <input type="text" id="username" placeholder="Username" required>
-                        <input type="email" id="email" placeholder="Email" required>
-                        <input type="password" id="password" placeholder="Password" required>
-                        <button type="submit" class="btn">Sign Up</button>
-                    </form>
-                    <p style="margin-top:15px;">Already have an account? <a href="#" onclick="showView('login')">Login</a></p>
-                </div>
-            `;
-            document.getElementById('signupForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const username = document.getElementById('username').value;
-                try {
-                    const { data, error } = await supabase.auth.signUp({ email, password });
-                    if (error) throw error;
-                    // Create profile
-                    const { error: profileError } = await supabase
+            // Update UI based on user
+            async function updateUIForUser() {
+                if (currentUser) {
+                    const { data: profile, error } = await supabase
                         .from('profiles')
-                        .insert({ id: data.user.id, username, role: 'user', balance: 0 });
-                    if (profileError) {
-                        // If profile insert fails, we should delete the auth user? For simplicity, just show error.
-                        throw profileError;
+                        .select('*')
+                        .eq('id', currentUser.id)
+                        .single();
+
+                    if (error && error.code === 'PGRST116') {
+                        // Profile doesn't exist – create it now (shouldn't happen if signup worked)
+                        console.warn('Profile missing, creating one');
+                        const username = currentUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                        await supabase.from('profiles').insert({
+                            id: currentUser.id,
+                            full_name: currentUser.email.split('@')[0],
+                            username: username,
+                            avatar_url: `https://ui-avatars.com/api/?name=${currentUser.email.split('@')[0]}&size=80&background=random`
+                        });
+                        // fetch again
+                        const { data: newProfile } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', currentUser.id)
+                            .single();
+                        if (newProfile) applyProfile(newProfile);
+                    } else if (profile) {
+                        applyProfile(profile);
                     }
-                    showMessage('Signup successful! Please login.', false);
-                    showView('login');
-                } catch (err) {
-                    showMessage('Signup error: ' + err.message, true);
+                } else {
+                    // guest view
+                    profileAvatar.src = 'https://ui-avatars.com/api/?name=Guest&size=80&background=random';
+                    navbarAvatar.classList.add('hidden');
+                    authBtn.innerText = 'Log in';
+                    profileName.innerText = 'Guest';
+                    profileUsername.innerText = '@guest';
+                    createPostBox.classList.add('hidden');
                 }
-            });
-        };
-
-        async function renderHome() {
-            let tips = [], ads = [];
-            try {
-                const { data: t, error } = await supabase.from('tips').select('*').eq('approved', true).order('created_at', { ascending: false });
-                if (error && error.code !== '42P01') throw error;
-                tips = t || [];
-            } catch (err) {
-                console.warn('Tips fetch error:', err);
-                if (err.code === '42P01') showMessage('Tips table not found. Run SQL setup.', true);
-            }
-            try {
-                const { data: a, error } = await supabase.from('ads').select('*').eq('active', true);
-                if (error && error.code !== '42P01') throw error;
-                ads = a || [];
-            } catch (err) {
-                console.warn('Ads fetch error:', err);
             }
 
-            let adsHtml = ads.map(ad => `
-                <div class="ad-banner">
-                    <a href="${ad.link_url || '#'}" target="_blank">
-                        <img src="${ad.image_url}" alt="Ad" style="max-width:100%; max-height:200px;">
-                    </a>
-                </div>
-            `).join('');
-
-            let tipsHtml = tips.length ? tips.map(tip => `
-                <div class="tip-card">
-                    <img src="${tip.image_url || 'https://via.placeholder.com/300x150'}" alt="tip">
-                    <h3>${tip.title}</h3>
-                    <p>${tip.description}</p>
-                    <div class="odds">Odds: ${tip.odds}</div>
-                    <button class="btn" onclick="placeBet(${tip.id})">Bet 10 credits</button>
-                </div>
-            `).join('') : '<p>No tips available yet.</p>';
-
-            app.innerHTML = `
-                <h2>Welcome, ${userProfile?.username || 'User'}!</h2>
-                ${adsHtml}
-                <h3>Latest Tips</h3>
-                <div class="flex">${tipsHtml}</div>
-                <div class="card">
-                    <h3>Deposit Credits</h3>
-                    <button class="btn" onclick="deposit()">Deposit (Simulated)</button>
-                </div>
-            `;
-        }
-
-        window.placeBet = async function(tipId) {
-            if (!currentUser || !userProfile) return;
-            if (userProfile.balance < 10) {
-                showMessage('Insufficient balance. Please deposit.', true);
-                return;
+            function applyProfile(profile) {
+                const avatar = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name || 'User'}&size=80&background=random`;
+                profileAvatar.src = avatar;
+                navbarAvatar.src = avatar;
+                profileName.innerText = profile.full_name || 'User';
+                profileUsername.innerText = `@${profile.username || 'user'}`;
+                navbarAvatar.classList.remove('hidden');
+                authBtn.innerText = 'Log out';
+                createPostBox.classList.remove('hidden');
             }
-            try {
-                const newBalance = userProfile.balance - 10;
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ balance: newBalance })
-                    .eq('id', currentUser.id);
-                if (error) throw error;
-                userProfile.balance = newBalance;
-                balanceDisplay.textContent = `${newBalance} credits`;
-                // Record transaction (optional)
-                try {
-                    await supabase.from('transactions').insert({
-                        user_id: currentUser.id,
-                        amount: -10,
-                        type: 'bet'
-                    });
-                } catch (e) { /* ignore if table missing */ }
-                showMessage('Bet placed! (Simulated)', false);
-            } catch (err) {
-                showMessage('Bet error: ' + err.message, true);
-            }
-        };
 
-        function renderTips() { renderHome(); }
+            // Load posts with relations
+            async function loadPosts() {
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select(`
+                        *,
+                        profiles:user_id (id, username, full_name, avatar_url),
+                        likes ( user_id ),
+                        comments ( id, content, created_at, user_id, profiles:user_id (username, full_name, avatar_url) )
+                    `)
+                    .order('created_at', { ascending: false });
 
-        window.deposit = async function() {
-            const amount = prompt('Enter amount to deposit (credits):', '100');
-            if (!amount) return;
-            try {
-                // Try RPC first (if function exists)
-                const { error } = await supabase.rpc('add_credits', { user_id: currentUser.id, amount: parseInt(amount) });
                 if (error) {
-                    // Fallback: direct update (if RLS allows)
-                    const newBalance = userProfile.balance + parseInt(amount);
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({ balance: newBalance })
-                        .eq('id', currentUser.id);
-                    if (updateError) throw updateError;
-                    userProfile.balance = newBalance;
-                    // Record transaction
-                    await supabase.from('transactions').insert({
-                        user_id: currentUser.id,
-                        amount: parseInt(amount),
-                        type: 'deposit'
-                    }).catch(() => {});
-                } else {
-                    // RPC succeeded, refresh profile
-                    await loadUserProfile();
+                    console.error('Error loading posts:', error);
+                    postsContainer.innerHTML = '<p style="text-align:center; color:#c00;">Failed to load posts. Check console.</p>';
+                    return;
                 }
-                balanceDisplay.textContent = `${userProfile.balance} credits`;
-                showMessage('Deposit successful!', false);
-            } catch (err) {
-                showMessage('Deposit error: ' + err.message, true);
-            }
-        };
-
-        async function renderAdmin() {
-            if (userProfile?.role !== 'admin') {
-                showMessage('Access denied', true);
-                return showView('home');
-            }
-            let pendingTips = [], ads = [], users = [];
-            try {
-                const { data: pt } = await supabase.from('tips').select('*').eq('approved', false);
-                pendingTips = pt || [];
-                const { data: ad } = await supabase.from('ads').select('*');
-                ads = ad || [];
-                const { data: u } = await supabase.from('profiles').select('*');
-                users = u || [];
-            } catch (err) {
-                showMessage('Error loading admin data: ' + err.message, true);
+                posts = data || [];
+                renderPosts();
             }
 
-            app.innerHTML = `
-                <h2>Admin Panel</h2>
-                <div class="card">
-                    <h3>Add New Tip</h3>
-                    <input type="text" id="tipTitle" placeholder="Title">
-                    <input type="text" id="tipOdds" placeholder="Odds (e.g., 2.10)">
-                    <input type="url" id="tipImage" placeholder="Image URL">
-                    <textarea id="tipDesc" placeholder="Description"></textarea>
-                    <button class="btn" onclick="addTip()">Post Tip</button>
-                </div>
-                <div class="card">
-                    <h3>Manage Ads</h3>
-                    <input type="url" id="adImage" placeholder="Ad Image URL">
-                    <input type="url" id="adLink" placeholder="Ad Link URL">
-                    <button class="btn" onclick="addAd()">Add Ad</button>
-                    <h4>Current Ads</h4>
-                    <div id="adsList">${ads.map(ad => `<div>${ad.image_url} <button onclick="deleteAd(${ad.id})">Delete</button></div>`).join('') || 'None'}</div>
-                </div>
-                <div class="card">
-                    <h3>Pending Tips</h3>
-                    <div>${pendingTips.map(tip => `
-                        <div>
-                            <p><strong>${tip.title}</strong> - ${tip.odds}</p>
-                            <button onclick="approveTip(${tip.id})">Approve</button>
-                            <button onclick="rejectTip(${tip.id})">Reject</button>
-                        </div>
-                    `).join('') || 'No pending tips'}</div>
-                </div>
-                <div class="card">
-                    <h3>Users</h3>
-                    <table>
-                        <tr><th>Username</th><th>Role</th><th>Balance</th><th>Action</th></tr>
-                        ${users.map(u => `
-                            <tr>
-                                <td>${u.username}</td>
-                                <td>${u.role}</td>
-                                <td>${u.balance}</td>
-                                <td><button onclick="setRole('${u.id}', 'moderator')">Make Moderator</button></td>
-                            </tr>
-                        `).join('')}
-                    </table>
-                </div>
-            `;
-        }
-
-        window.addTip = async function() {
-            const title = document.getElementById('tipTitle').value;
-            const odds = document.getElementById('tipOdds').value;
-            const image_url = document.getElementById('tipImage').value;
-            const desc = document.getElementById('tipDesc').value;
-            try {
-                await supabase.from('tips').insert({
-                    title, odds, image_url, description: desc,
-                    created_by: currentUser.id,
-                    approved: false
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    if (m === '"') return '&quot;';
+                    return m;
                 });
-                showMessage('Tip added, pending approval', false);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error adding tip: ' + err.message, true);
             }
-        };
 
-        window.addAd = async function() {
-            const image_url = document.getElementById('adImage').value;
-            const link_url = document.getElementById('adLink').value;
-            try {
-                await supabase.from('ads').insert({ image_url, link_url, active: true });
-                showMessage('Ad added', false);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error adding ad: ' + err.message, true);
-            }
-        };
+            function renderPosts() {
+                postsContainer.innerHTML = '';
+                if (posts.length === 0) {
+                    postsContainer.innerHTML = '<p style="text-align:center; color:#65676b;">No posts yet. Be the first to post!</p>';
+                    return;
+                }
 
-        window.deleteAd = async function(id) {
-            try {
-                await supabase.from('ads').delete().eq('id', id);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error deleting ad: ' + err.message, true);
-            }
-        };
+                posts.forEach(post => {
+                    const author = post.profiles || {};
+                    const avatarUrl = author.avatar_url || `https://ui-avatars.com/api/?name=${author.full_name || 'U'}&size=44&background=random`;
+                    const likedByMe = currentUser && post.likes?.some(like => like.user_id === currentUser.id);
+                    const likesCount = post.likes?.length || 0;
+                    const commentsCount = post.comments?.length || 0;
 
-        window.approveTip = async function(id) {
-            try {
-                await supabase.from('tips').update({ approved: true }).eq('id', id);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error approving tip: ' + err.message, true);
-            }
-        };
+                    const postEl = document.createElement('div');
+                    postEl.className = 'post-card';
+                    postEl.dataset.postId = post.id;
 
-        window.rejectTip = async function(id) {
-            try {
-                await supabase.from('tips').delete().eq('id', id);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error rejecting tip: ' + err.message, true);
-            }
-        };
-
-        window.setRole = async function(userId, role) {
-            try {
-                await supabase.from('profiles').update({ role }).eq('id', userId);
-                renderAdmin();
-            } catch (err) {
-                showMessage('Error setting role: ' + err.message, true);
-            }
-        };
-
-        async function renderModerator() {
-            if (!['moderator', 'admin'].includes(userProfile?.role)) {
-                showMessage('Access denied', true);
-                return showView('home');
-            }
-            let pendingTips = [];
-            try {
-                const { data: pt } = await supabase.from('tips').select('*').eq('approved', false);
-                pendingTips = pt || [];
-            } catch (err) {
-                showMessage('Error loading pending tips: ' + err.message, true);
-            }
-            app.innerHTML = `
-                <h2>Moderator Panel</h2>
-                <div class="card">
-                    <h3>Pending Tips</h3>
-                    ${pendingTips.map(tip => `
-                        <div>
-                            <p><strong>${tip.title}</strong> - ${tip.odds}</p>
-                            <p>${tip.description}</p>
-                            <img src="${tip.image_url}" style="max-width:200px;">
-                            <button onclick="approveTip(${tip.id})">Approve</button>
-                            <button onclick="rejectTip(${tip.id})">Reject</button>
+                    postEl.innerHTML = `
+                        <div class="post-header">
+                            <img src="${avatarUrl}" alt="avatar">
+                            <div class="channel-info">
+                                <h3>${escapeHtml(author.full_name || 'Channel')}</h3>
+                                <p>@${escapeHtml(author.username || 'user')}</p>
+                            </div>
                         </div>
-                    `).join('') || 'No pending tips'}
-                </div>
-            `;
-        }
+                        <div class="post-title">${escapeHtml(post.title || '')}</div>
+                        ${post.content ? `<p style="margin-bottom:0.5rem;">${escapeHtml(post.content)}</p>` : ''}
+                        ${post.thumbnail_url ? `<img class="post-thumbnail" src="${escapeHtml(post.thumbnail_url)}" alt="thumbnail" onerror="this.src='https://via.placeholder.com/600x300?text=No+Image'">` : ''}
+                        <div class="post-stats">
+                            <span><i class="fas fa-thumbs-up"></i> ${likesCount}</span>
+                            <span><i class="fas fa-comment"></i> ${commentsCount}</span>
+                        </div>
+                        <div class="post-engagement">
+                            <button class="engagement-btn like-btn ${likedByMe ? 'liked' : ''}">
+                                <i class="fas fa-thumbs-up"></i> Like
+                            </button>
+                            <button class="engagement-btn comment-toggle-btn">
+                                <i class="fas fa-comment"></i> Comment
+                            </button>
+                            <button class="engagement-btn share-btn">
+                                <i class="fas fa-share"></i> Share
+                            </button>
+                        </div>
+                        <div class="comment-section hidden"></div>
+                    `;
 
-        window.logout = async function() {
-            await supabase.auth.signOut();
-        };
+                    // Like button
+                    const likeBtn = postEl.querySelector('.like-btn');
+                    likeBtn.addEventListener('click', () => handleLike(post.id, likeBtn));
 
-        window.showView = showView;
+                    // Comment toggle
+                    const commentToggle = postEl.querySelector('.comment-toggle-btn');
+                    const commentSection = postEl.querySelector('.comment-section');
+                    commentToggle.addEventListener('click', () => {
+                        commentSection.classList.toggle('hidden');
+                        if (!commentSection.hasChildNodes()) {
+                            renderComments(post, commentSection);
+                        }
+                    });
+
+                    // Share button (simulated)
+                    postEl.querySelector('.share-btn').addEventListener('click', () => {
+                        alert('🔗 Share dialog – link copied to clipboard (simulated)');
+                    });
+
+                    postsContainer.appendChild(postEl);
+                });
+            }
+
+            async function renderComments(post, container) {
+                container.innerHTML = '';
+                const comments = post.comments || [];
+                comments.forEach(c => {
+                    const commentAuthor = c.profiles || {};
+                    const commentAvatar = commentAuthor.avatar_url || `https://ui-avatars.com/api/?name=${commentAuthor.full_name || 'U'}&size=32&background=random`;
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.innerHTML = `
+                        <img src="${commentAvatar}" alt="avatar">
+                        <div class="comment-bubble">
+                            <strong>${escapeHtml(commentAuthor.full_name || 'User')}</strong> ${escapeHtml(c.content)}
+                        </div>
+                    `;
+                    container.appendChild(commentDiv);
+                });
+
+                if (currentUser) {
+                    const form = document.createElement('div');
+                    form.className = 'comment-form';
+                    form.innerHTML = `
+                        <input type="text" placeholder="Write a comment..." id="commentInput-${post.id}">
+                        <button class="btn btn-primary submit-comment" data-post="${post.id}">Post</button>
+                    `;
+                    container.appendChild(form);
+                    form.querySelector('.submit-comment').addEventListener('click', () => {
+                        const input = document.getElementById(`commentInput-${post.id}`);
+                        if (input.value.trim()) {
+                            addComment(post.id, input.value.trim());
+                        }
+                    });
+                } else {
+                    const loginMsg = document.createElement('p');
+                    loginMsg.style.padding = '0.5rem';
+                    loginMsg.style.color = '#65676b';
+                    loginMsg.innerText = 'Log in to comment.';
+                    container.appendChild(loginMsg);
+                }
+            }
+
+            async function addComment(postId, content) {
+                if (!currentUser) return alert('Please log in');
+                const { error } = await supabase
+                    .from('comments')
+                    .insert({ post_id: postId, user_id: currentUser.id, content });
+                if (error) {
+                    alert('Error posting comment: ' + error.message);
+                } else {
+                    await loadPosts();
+                }
+            }
+
+            async function handleLike(postId, btn) {
+                if (!currentUser) return alert('Please log in');
+                const liked = btn.classList.contains('liked');
+                if (liked) {
+                    await supabase
+                        .from('likes')
+                        .delete()
+                        .eq('post_id', postId)
+                        .eq('user_id', currentUser.id);
+                } else {
+                    await supabase
+                        .from('likes')
+                        .insert({ post_id: postId, user_id: currentUser.id });
+                }
+                await loadPosts();
+            }
+
+            // ==================== AUTH ====================
+            async function signUp(email, password) {
+                setAuthError('');
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) {
+                    setAuthError(error.message);
+                    return;
+                }
+                if (data.user) {
+                    // Automatically create a profile row
+                    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const { error: profileError } = await supabase.from('profiles').insert({
+                        id: data.user.id,
+                        full_name: email.split('@')[0],
+                        username: username,
+                        avatar_url: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&size=80&background=random`
+                    });
+                    if (profileError) {
+                        console.warn('Profile insert error (might be trigger or RLS)', profileError);
+                        // Still try to proceed
+                    }
+                    hideModal();
+                    fetchUser();
+                }
+            }
+
+            async function signIn(email, password) {
+                setAuthError('');
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                    setAuthError(error.message);
+                    return;
+                }
+                hideModal();
+                fetchUser();
+            }
+
+            async function signOut() {
+                await supabase.auth.signOut();
+                currentUser = null;
+                updateUIForUser();
+                loadPosts();
+            }
+
+            async function fetchUser() {
+                const { data: { user } } = await supabase.auth.getUser();
+                currentUser = user;
+                await updateUIForUser();
+                loadPosts();
+            }
+
+            // ==================== POST CREATION ====================
+            publishPost.addEventListener('click', async () => {
+                if (!currentUser) return alert('Log in first');
+                const title = postTitle.value.trim();
+                const content = postContent.value.trim();
+                const thumbnail = postThumbnail.value.trim() || null;
+
+                if (!title) return alert('Title is required');
+
+                const { error } = await supabase
+                    .from('posts')
+                    .insert({
+                        user_id: currentUser.id,
+                        title,
+                        content,
+                        thumbnail_url: thumbnail
+                    });
+
+                if (error) {
+                    alert('Error creating post: ' + error.message);
+                } else {
+                    postTitle.value = '';
+                    postContent.value = '';
+                    postThumbnail.value = '';
+                    loadPosts();
+                }
+            });
+
+            // ==================== EVENT LISTENERS ====================
+            authBtn.addEventListener('click', () => {
+                if (currentUser) {
+                    signOut();
+                } else {
+                    showModal();
+                }
+            });
+
+            switchAuth.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                authModalTitle.innerText = isLoginMode ? 'Log in' : 'Sign up';
+                authActionBtn.innerText = isLoginMode ? 'Log in' : 'Sign up';
+                switchAuth.innerText = isLoginMode ? 'Create new account' : 'Already have an account? Log in';
+                setAuthError('');
+            });
+
+            authActionBtn.addEventListener('click', () => {
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                if (!email || !password) {
+                    setAuthError('Please fill both fields');
+                    return;
+                }
+                if (isLoginMode) {
+                    signIn(email, password);
+                } else {
+                    signUp(email, password);
+                }
+            });
+
+            authModal.addEventListener('click', (e) => {
+                if (e.target === authModal) hideModal();
+            });
+
+            // ==================== INIT ====================
+            fetchUser();
+
+            // ==================== SQL SETUP (run in Supabase SQL editor) ====================
+            /*
+            -- Run this entire block in your Supabase SQL editor once.
+
+            -- 1. Profiles table
+            CREATE TABLE IF NOT EXISTS profiles (
+                id UUID REFERENCES auth.users PRIMARY KEY,
+                username TEXT UNIQUE,
+                full_name TEXT,
+                avatar_url TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+
+            -- 2. Posts table
+            CREATE TABLE IF NOT EXISTS posts (
+                id BIGSERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                content TEXT,
+                thumbnail_url TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+
+            -- 3. Likes table
+            CREATE TABLE IF NOT EXISTS likes (
+                id BIGSERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+                post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                UNIQUE(user_id, post_id)
+            );
+
+            -- 4. Comments table
+            CREATE TABLE IF NOT EXISTS comments (
+                id BIGSERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+                post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+
+            -- Enable Row Level Security
+            ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+
+            -- Policies – open for all authenticated users (simplified for demo)
+            CREATE POLICY "Public profiles" ON profiles FOR SELECT USING (true);
+            CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+            CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+            CREATE POLICY "Posts viewable by all" ON posts FOR SELECT USING (true);
+            CREATE POLICY "Authenticated insert posts" ON posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+            CREATE POLICY "Owners update/delete" ON posts FOR UPDATE USING (auth.uid() = user_id);
+            CREATE POLICY "Owners delete" ON posts FOR DELETE USING (auth.uid() = user_id);
+
+            CREATE POLICY "Likes viewable by all" ON likes FOR SELECT USING (true);
+            CREATE POLICY "Authenticated like" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+            CREATE POLICY "Authenticated unlike" ON likes FOR DELETE USING (auth.uid() = user_id);
+
+            CREATE POLICY "Comments viewable by all" ON comments FOR SELECT USING (true);
+            CREATE POLICY "Authenticated comment" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+            CREATE POLICY "Comment owners edit/delete" ON comments FOR UPDATE USING (auth.uid() = user_id);
+            CREATE POLICY "Comment owners delete" ON comments FOR DELETE USING (auth.uid() = user_id);
+            */
+        })();
     </script>
 </body>
-</html>
+	</html>
