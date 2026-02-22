@@ -3,222 +3,386 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>Chirp · X</title>
-  <!-- Tailwind with dark mode (X uses dark by default) -->
+  <title>Chirp · modern social</title>
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <!-- Supabase JS -->
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* X-like custom styles */
-    body { background-color: black; color: #e7e9ea; }
-    .sidebar-icon { @apply text-2xl text-gray-400 hover:text-white transition; }
-    .active-nav { @apply text-white font-bold; }
-    .verified-badge { color: #1d9bf0; margin-left: 2px; font-size: 1rem; }
-    .online-dot { width: 12px; height: 12px; background-color: #00ba7c; border-radius: 50%; border: 2px solid black; position: absolute; bottom: 0; right: 0; }
-    .avatar-container { position: relative; display: inline-block; }
-    .post-avatar { width: 48px; height: 48px; border-radius: 50%; }
-    .reaction-picker {
-      position: absolute; bottom: 100%; left: 0; background: #16181c; border-radius: 999px;
-      box-shadow: 0 2px 10px rgba(255,255,255,0.1); display: flex; gap: 0.25rem;
-      padding: 0.25rem; opacity: 0; transform: translateY(10px); pointer-events: none;
-      transition: all 0.2s ease; z-index: 20;
-    }
-    .like-btn:hover .reaction-picker, .reaction-picker:hover {
-      opacity: 1; transform: translateY(0); pointer-events: auto;
-    }
-    .reaction-emoji { font-size: 1.5rem; cursor: pointer; padding: 0.25rem; border-radius: 50%; transition: transform 0.2s; }
-    .reaction-emoji:hover { transform: scale(1.3); background: #2c2f33; }
+    .like-active { color: #1877f2; }
+    .modal { transition: opacity 0.2s ease; }
     #new-posts-banner {
-      transition: transform 0.3s ease, opacity 0.3s ease; transform: translateY(-100%); opacity: 0;
-      position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-100%); z-index: 40;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform: translateY(-100%);
+      opacity: 0;
     }
-    #new-posts-banner.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    /* Mobile bottom nav */
-    @media (max-width: 768px) {
-      .sidebar { display: none; }
-      .mobile-nav { display: flex; }
+    #new-posts-banner.show {
+      transform: translateY(0);
+      opacity: 1;
     }
-    @media (min-width: 769px) {
-      .mobile-nav { display: none; }
+    @keyframes ticker {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .ticker-animation {
+      animation: ticker 20s linear infinite;
+    }
+    .ticker-animation:hover {
+      animation-play-state: paused;
+    }
+    .fullscreen-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .fullscreen-overlay.show {
+      display: flex;
+    }
+    .fullscreen-content {
+      background: white;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+    .dark .fullscreen-content {
+      background: #1f2937;
+      color: white;
     }
   </style>
 </head>
-<body class="bg-black text-gray-200 font-sans antialiased">
+<body class="bg-gray-100 font-sans antialiased transition-colors duration-200 dark:bg-gray-900">
 
-<div id="app" class="max-w-7xl mx-auto flex">
-  <!-- Desktop Sidebar -->
-  <div class="sidebar w-64 p-4 border-r border-gray-800 hidden md:block">
-    <div class="flex items-center gap-2 mb-8">
-      <i class="fa-solid fa-dove text-[#1d9bf0] text-3xl"></i>
-      <h1 class="text-2xl font-bold text-white">chirp</h1>
+<div id="app" class="max-w-2xl mx-auto p-4 relative">
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-6 bg-white p-3 rounded-xl shadow-sm dark:bg-gray-800 dark:text-white">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-dove text-[#1877f2] text-2xl"></i>
+      <h1 class="text-2xl font-bold text-[#1877f2] dark:text-blue-400">chirp</h1>
     </div>
-    <nav class="flex flex-col gap-6 text-xl">
-      <a href="#" class="nav-link flex items-center gap-3 text-gray-400 hover:text-white transition" data-page="home">
-        <i class="fa-solid fa-house"></i> <span>Home</span>
-      </a>
-      <a href="#" class="nav-link flex items-center gap-3 text-gray-400 hover:text-white transition" data-page="explore">
-        <i class="fa-solid fa-hashtag"></i> <span>Explore</span>
-      </a>
-      <a href="#" class="nav-link flex items-center gap-3 text-gray-400 hover:text-white transition" data-page="profile">
-        <i class="fa-regular fa-user"></i> <span>Profile</span>
-      </a>
-      <a href="#" class="nav-link flex items-center gap-3 text-gray-400 hover:text-white transition" data-page="analytics">
-        <i class="fa-solid fa-chart-simple"></i> <span>Analytics</span>
-      </a>
-      <!-- Admin link (visible only to admins) -->
-      <a href="#" class="nav-link admin-only flex items-center gap-3 text-gray-400 hover:text-white transition hidden" data-page="admin">
-        <i class="fa-solid fa-gear"></i> <span>Admin</span>
-      </a>
-    </nav>
-    <!-- User avatar & logout -->
-    <div id="sidebar-user" class="absolute bottom-4 flex items-center gap-3">
-      <div class="avatar-container">
-        <img id="sidebar-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full">
-        <span class="online-dot hidden" id="sidebar-online"></span>
-      </div>
-      <div>
-        <p id="sidebar-username" class="font-bold">User</p>
-        <button id="sidebar-logout" class="text-sm text-gray-500 hover:text-white">Logout</button>
-      </div>
+    <div class="flex items-center gap-3 text-sm">
+      <button id="dark-mode-toggle" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+        <i class="fa-regular fa-moon dark:hidden"></i>
+        <i class="fa-regular fa-sun hidden dark:inline"></i>
+      </button>
+      <div id="auth-state" class="flex items-center gap-3"></div>
+    </div>
+  </header>
+
+  <!-- Live Activity Ticker -->
+  <div id="ticker-container" class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-2 rounded-lg mb-4 overflow-hidden cursor-pointer relative" onclick="openActivityLog()">
+    <div class="ticker-animation whitespace-nowrap inline-block" id="ticker-text">
+      Loading activity...
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation -->
-  <div class="mobile-nav fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 flex justify-around p-3 z-30">
-    <a href="#" class="nav-link text-gray-400" data-page="home"><i class="fa-solid fa-house text-xl"></i></a>
-    <a href="#" class="nav-link text-gray-400" data-page="explore"><i class="fa-solid fa-hashtag text-xl"></i></a>
-    <a href="#" class="nav-link text-gray-400" data-page="profile"><i class="fa-regular fa-user text-xl"></i></a>
-    <a href="#" class="nav-link text-gray-400" data-page="analytics"><i class="fa-solid fa-chart-simple text-xl"></i></a>
-    <a href="#" class="nav-link admin-only text-gray-400 hidden" data-page="admin"><i class="fa-solid fa-gear text-xl"></i></a>
-  </div>
-
-  <!-- Main Content Area -->
-  <main class="flex-1 md:ml-4 pb-20 md:pb-0">
-    <!-- Header with page title -->
-    <header class="sticky top-0 bg-black/80 backdrop-blur p-4 border-b border-gray-800 z-10">
-      <h2 id="page-title" class="text-xl font-bold">Home</h2>
-    </header>
-
-    <!-- New posts banner -->
-    <div id="new-posts-banner" class="bg-[#1d9bf0] text-white p-3 rounded-full shadow-lg cursor-pointer text-center">
-      <i class="fa-solid fa-arrow-up mr-2"></i> New posts available
+  <!-- Full-screen Activity Log Modal -->
+  <div id="activity-modal" class="fullscreen-overlay" onclick="if(event.target===this) closeActivityLog()">
+    <div class="fullscreen-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Live Activity Log</h2>
+        <button onclick="closeActivityLog()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa-solid fa-xmark text-2xl"></i>
+        </button>
+      </div>
+      <div id="activity-log-list" class="space-y-3"></div>
     </div>
+  </div>
 
-    <!-- Dynamic page content -->
-    <div id="page-content" class="p-4">
-      <!-- Home page (feed) will be rendered here by JS -->
+  <!-- New posts banner -->
+  <div id="new-posts-banner" class="bg-blue-500 text-white p-3 rounded-lg mb-4 cursor-pointer shadow-lg fixed top-20 left-1/2 transform -translate-x-1/2 z-30 w-64 text-center">
+    <i class="fa-solid fa-arrow-up mr-2"></i> New posts available
+  </div>
+
+  <!-- Auth forms -->
+  <div id="auth-forms" class="bg-white p-6 rounded-xl shadow-sm mb-6 hidden dark:bg-gray-800">
+    <h2 class="text-xl font-semibold mb-4 dark:text-white">Sign in / Sign up</h2>
+    <form id="login-form" class="space-y-3">
+      <input type="email" id="login-email" placeholder="Email" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+      <input type="password" id="login-password" placeholder="Password" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+      <button type="submit" class="w-full bg-[#1877f2] text-white p-3 rounded-lg font-semibold hover:bg-blue-600">Log in</button>
+    </form>
+    <p class="text-center text-gray-500 my-2 dark:text-gray-400">or</p>
+    <form id="signup-form" class="space-y-3">
+      <input type="email" id="signup-email" placeholder="Email" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+      <input type="password" id="signup-password" placeholder="Password" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+      <input type="text" id="signup-username" placeholder="Username" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+      <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700">Create account</button>
+    </form>
+  </div>
+
+  <!-- New post form -->
+  <div id="post-form-container" class="bg-white p-4 rounded-xl shadow-sm mb-6 hidden dark:bg-gray-800">
+    <form id="post-form" class="space-y-3">
+      <input type="text" id="post-title" placeholder="Title" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+      <textarea id="post-content" placeholder="What's on your mind?" rows="2" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required></textarea>
+      <input type="url" id="post-image" placeholder="Image URL (optional)" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+      <button type="submit" class="bg-[#1877f2] text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600">Post</button>
+    </form>
+  </div>
+
+  <!-- Profile edit modal -->
+  <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 dark:bg-gray-800">
+      <h3 class="text-xl font-bold mb-4 dark:text-white">Edit Profile</h3>
+      <form id="profile-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+          <input type="text" id="edit-username" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Avatar URL</label>
+          <input type="url" id="edit-avatar" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+          <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">Leave empty to keep current</p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="close-profile-modal" class="px-4 py-2 bg-gray-200 rounded-lg dark:bg-gray-600 dark:text-white">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#1877f2] text-white rounded-lg">Save</button>
+        </div>
+      </form>
     </div>
-  </main>
-</div>
-
-<!-- Modals (Profile edit, Edit post, Ad edit, Monetization request, Admin actions) -->
-<!-- Profile edit modal -->
-<div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-  <div class="bg-[#16181c] rounded-xl max-w-md w-full p-6 border border-gray-700">
-    <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
-    <form id="profile-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-400">Username</label>
-        <input type="text" id="edit-username" class="mt-1 w-full p-3 bg-black border border-gray-700 rounded-lg text-white" required>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-400">Avatar URL</label>
-        <input type="url" id="edit-avatar" class="mt-1 w-full p-3 bg-black border border-gray-700 rounded-lg text-white">
-        <p class="text-xs text-gray-500 mt-1">Leave empty to keep current</p>
-      </div>
-      <div class="flex justify-end gap-2">
-        <button type="button" id="close-profile-modal" class="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-[#1d9bf0] text-white rounded-lg hover:bg-blue-600">Save</button>
-      </div>
-    </form>
   </div>
-</div>
 
-<!-- Edit post modal -->
-<div id="edit-post-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-  <div class="bg-[#16181c] rounded-xl max-w-md w-full p-6 border border-gray-700">
-    <h3 class="text-xl font-bold mb-4">Edit Post</h3>
-    <form id="edit-post-form" class="space-y-4">
-      <input type="hidden" id="edit-post-id">
-      <div>
-        <label class="block text-sm font-medium text-gray-400">Title</label>
-        <input type="text" id="edit-post-title" class="mt-1 w-full p-3 bg-black border border-gray-700 rounded-lg text-white">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-400">Content</label>
-        <textarea id="edit-post-content" rows="3" class="mt-1 w-full p-3 bg-black border border-gray-700 rounded-lg text-white" required></textarea>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-400">Image URL</label>
-        <input type="url" id="edit-post-image" class="mt-1 w-full p-3 bg-black border border-gray-700 rounded-lg text-white">
-      </div>
-      <div class="flex justify-end gap-2">
-        <button type="button" id="close-edit-post-modal" class="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-[#1d9bf0] text-white rounded-lg hover:bg-blue-600">Update</button>
-      </div>
-    </form>
+  <!-- Edit post modal -->
+  <div id="edit-post-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 dark:bg-gray-800">
+      <h3 class="text-xl font-bold mb-4 dark:text-white">Edit Post</h3>
+      <form id="edit-post-form" class="space-y-4">
+        <input type="hidden" id="edit-post-id">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+          <input type="text" id="edit-post-title" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
+          <textarea id="edit-post-content" rows="3" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Image URL</label>
+          <input type="url" id="edit-post-image" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="close-edit-post-modal" class="px-4 py-2 bg-gray-200 rounded-lg dark:bg-gray-600 dark:text-white">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#1877f2] text-white rounded-lg">Update</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Ad edit modal (admin only) -->
-<div id="ad-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-  <div class="bg-[#16181c] rounded-xl max-w-2xl w-full p-6 border border-gray-700">
-    <h3 class="text-xl font-bold mb-4">Edit Ad (HTML allowed)</h3>
-    <form id="ad-form" class="space-y-4">
-      <textarea id="ad-content" rows="6" class="w-full p-3 bg-black border border-gray-700 rounded-lg font-mono text-sm text-white" placeholder="Paste your ad HTML/SVG/script here..."></textarea>
-      <div class="flex justify-end gap-2">
-        <button type="button" id="close-ad-modal" class="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-[#1d9bf0] text-white rounded-lg hover:bg-blue-600">Save Ad</button>
-      </div>
-    </form>
+  <!-- Admin Dashboard Button (visible only to admins) -->
+  <div id="admin-dashboard-btn-container" class="mb-4 hidden">
+    <button onclick="openAdminDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 w-full">
+      <i class="fa-solid fa-crown mr-2"></i>Admin Dashboard
+    </button>
   </div>
-</div>
 
-<!-- Monetization request modal -->
-<div id="monetization-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-  <div class="bg-[#16181c] rounded-xl max-w-md w-full p-6 border border-gray-700">
-    <h3 class="text-xl font-bold mb-4">Request Verification</h3>
-    <p class="text-gray-400 mb-4">Apply for a blue checkmark. Admin will review your request.</p>
-    <form id="monetization-form" class="space-y-4">
-      <div class="flex justify-end gap-2">
-        <button type="button" id="close-monetization-modal" class="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-[#1d9bf0] text-white rounded-lg hover:bg-blue-600">Request</button>
+  <!-- Admin Dashboard Modal -->
+  <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold dark:text-white">Admin Dashboard</h2>
+        <button onclick="closeAdminDashboard()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa-solid fa-xmark text-2xl"></i>
+        </button>
       </div>
-    </form>
+
+      <!-- Tabs -->
+      <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+        <nav class="flex gap-4">
+          <button class="admin-tab px-3 py-2 text-blue-600 border-b-2 border-blue-600 font-medium" data-tab="dashboard">Dashboard</button>
+          <button class="admin-tab px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600" data-tab="posts">Posts</button>
+          <button class="admin-tab px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600" data-tab="users">Users</button>
+          <button class="admin-tab px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600" data-tab="ads">Ads</button>
+          <button class="admin-tab px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600" data-tab="announce">Announce</button>
+          <button class="admin-tab px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600" data-tab="analytics">Analytics</button>
+        </nav>
+      </div>
+
+      <!-- Tab content -->
+      <div id="admin-tab-content">
+        <!-- Dashboard -->
+        <div class="tab-pane active" data-pane="dashboard">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-blue-100 dark:bg-blue-900 p-4 rounded-lg">
+              <p class="text-sm text-blue-800 dark:text-blue-200">Total Users</p>
+              <p class="text-2xl font-bold" id="stat-users">0</p>
+            </div>
+            <div class="bg-green-100 dark:bg-green-900 p-4 rounded-lg">
+              <p class="text-sm text-green-800 dark:text-green-200">Total Posts</p>
+              <p class="text-2xl font-bold" id="stat-posts">0</p>
+            </div>
+            <div class="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg">
+              <p class="text-sm text-yellow-800 dark:text-yellow-200">Total Views</p>
+              <p class="text-2xl font-bold" id="stat-views">0</p>
+            </div>
+            <div class="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg">
+              <p class="text-sm text-purple-800 dark:text-purple-200">Total Likes</p>
+              <p class="text-2xl font-bold" id="stat-likes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Posts management -->
+        <div class="tab-pane hidden" data-pane="posts">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold dark:text-white">Manage Posts</h3>
+            <div id="admin-posts-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Users management -->
+        <div class="tab-pane hidden" data-pane="users">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold dark:text-white">Manage Users</h3>
+            <div id="admin-users-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Ads management -->
+        <div class="tab-pane hidden" data-pane="ads">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold dark:text-white">Manage Ads</h3>
+            <button onclick="showAddAdForm()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mb-4">
+              <i class="fa-solid fa-plus mr-2"></i>Add New Ad
+            </button>
+            <div id="admin-ads-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Announcements (Admin posts) -->
+        <div class="tab-pane hidden" data-pane="announce">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold dark:text-white">Post an Announcement</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Announcements appear as regular posts but are highlighted with a blue border and a crown icon.</p>
+            <form id="announcement-form" class="space-y-3 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <input type="text" id="announce-title" placeholder="Title (optional)" class="w-full p-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600">
+              <textarea id="announce-content" placeholder="Announcement content" rows="4" class="w-full p-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600" required></textarea>
+              <div class="flex gap-2">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Post Announcement</button>
+                <button type="button" onclick="postWelcomeMessage()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Post Welcome Message</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="tab-pane hidden" data-pane="analytics">
+          <h3 class="text-lg font-semibold dark:text-white mb-4">Analytics (Last 7 Days)</h3>
+          <canvas id="analytics-chart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Add/Edit Ad Form (inside admin modal) -->
+  <div id="ad-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[60]">
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold mb-4 dark:text-white" id="ad-form-title">Add New Ad</h3>
+      <form id="ad-edit-form" class="space-y-4">
+        <input type="hidden" id="ad-id">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Image URL</label>
+          <input type="url" id="ad-image" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link URL (optional)</label>
+          <input type="url" id="ad-link" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Promoted Text</label>
+          <input type="text" id="ad-promoted" class="mt-1 w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" value="Promoted">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Active</label>
+          <input type="checkbox" id="ad-active" class="mt-1" checked>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeAdForm()" class="px-4 py-2 bg-gray-200 rounded-lg dark:bg-gray-600 dark:text-white">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#1877f2] text-white rounded-lg">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Posts feed -->
+  <div id="posts" class="space-y-4"></div>
 </div>
 
 <script>
+  // ==================== SECURITY: Escape HTML ====================
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // ---------- Supabase init ----------
   const SUPABASE_URL = 'https://vcopwxjcjraddqwxmxkb.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_9b2BZuqv8hms1kXt9hBXnQ_GBCzLmSn';
+  const SUPABASE_ANON_KEY = 'sb_publishable_9b2BZuqv8hms1kXt9hBXnQ_GBCzLmSn'; // REPLACE WITH YOUR KEY
   const { createClient } = supabase;
   const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // Global state
   let currentUser = null;
   let currentProfile = null;
-  let adContent = '';
   let posts = [];
+  let ads = [];
   const viewedPosts = new Set();
+  let lastPostTimestamp = null;
+  let pollInterval = null;
+  let activityInterval = null;
+  let analyticsChart = null;
 
   // DOM elements
-  const pageContent = document.getElementById('page-content');
-  const pageTitle = document.getElementById('page-title');
-  const sidebarUsername = document.getElementById('sidebar-username');
-  const sidebarAvatar = document.getElementById('sidebar-avatar');
-  const sidebarOnline = document.getElementById('sidebar-online');
-  const newPostsBanner = document.getElementById('new-posts-banner');
-
-  // Modals
+  const authForms = document.getElementById('auth-forms');
+  const postFormContainer = document.getElementById('post-form-container');
+  const authStateDiv = document.getElementById('auth-state');
+  const postsContainer = document.getElementById('posts');
+  const darkModeToggle = document.getElementById('dark-mode-toggle');
+  const adminBtnContainer = document.getElementById('admin-dashboard-btn-container');
+  const adminModal = document.getElementById('admin-modal');
+  const adFormModal = document.getElementById('ad-form-modal');
   const profileModal = document.getElementById('profile-modal');
   const editPostModal = document.getElementById('edit-post-modal');
-  const adModal = document.getElementById('ad-modal');
-  const monetizationModal = document.getElementById('monetization-modal');
+  const closeProfileModal = document.getElementById('close-profile-modal');
+  const closeEditPostModal = document.getElementById('close-edit-post-modal');
 
-  // ---------- Helper functions ----------
+  // ---------- Dark mode ----------
+  function initDarkMode() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) document.body.classList.add('dark');
+    updateDarkModeIcon();
+  }
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+    updateDarkModeIcon();
+  }
+  function updateDarkModeIcon() {
+    const isDark = document.body.classList.contains('dark');
+    darkModeToggle.innerHTML = isDark
+      ? '<i class="fa-regular fa-sun"></i>'
+      : '<i class="fa-regular fa-moon"></i>';
+  }
+  darkModeToggle.addEventListener('click', toggleDarkMode);
+  initDarkMode();
+
+  // ---------- Helpers ----------
   function timeAgo(dateStr) {
     const date = new Date(dateStr);
     const now = new Date();
@@ -233,28 +397,10 @@
   }
 
   function isWithin30Minutes(postCreatedAt) {
-    return (Date.now() - new Date(postCreatedAt).getTime()) <= 30 * 60 * 1000;
+    const postTime = new Date(postCreatedAt).getTime();
+    const now = Date.now();
+    return (now - postTime) <= 30 * 60 * 1000;
   }
-
-  function isOnline(lastActive) {
-    if (!lastActive) return false;
-    return (Date.now() - new Date(lastActive).getTime()) < 5 * 60 * 1000;
-  }
-
-  // Update last_active for current user
-  async function updateLastActive() {
-    if (!currentUser) return;
-    await _supabase.rpc('update_last_active');
-    // Also update local profile if we have it
-    if (currentProfile) {
-      currentProfile.last_active = new Date().toISOString();
-    }
-  }
-
-  // Call updateLastActive on user actions
-  window.addEventListener('click', updateLastActive);
-  window.addEventListener('scroll', updateLastActive);
-  setInterval(updateLastActive, 60000); // every minute
 
   // ---------- Fetch current profile ----------
   async function fetchCurrentProfile() {
@@ -272,499 +418,411 @@
       currentProfile = null;
     } else {
       currentProfile = data;
-      // Update sidebar
-      sidebarUsername.textContent = data.username;
-      sidebarAvatar.src = data.avatar_url || 'https://via.placeholder.com/40';
-      if (isOnline(data.last_active)) sidebarOnline.classList.remove('hidden');
-      else sidebarOnline.classList.add('hidden');
-      // Show admin link if admin
-      if (data.is_admin) {
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    }
+  }
+
+  // ---------- Auth UI update ----------
+  async function updateAuthUI(user) {
+    // Clear intervals on logout
+    if (!user) {
+      if (pollInterval) clearInterval(pollInterval);
+      if (activityInterval) clearInterval(activityInterval);
+      pollInterval = null;
+      activityInterval = null;
+    }
+
+    await fetchCurrentProfile();
+    if (user) {
+      authForms.classList.add('hidden');
+      postFormContainer.classList.remove('hidden');
+      const avatarUrl = currentProfile?.avatar_url || 'https://via.placeholder.com/32';
+      authStateDiv.innerHTML = `
+        <button id="profile-btn" class="flex items-center gap-2">
+          <img src="${escapeHTML(avatarUrl)}" class="w-8 h-8 rounded-full object-cover" onerror="this.src='https://via.placeholder.com/32'">
+        </button>
+        <button id="logout-btn" class="bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-white">Logout</button>
+      `;
+      document.getElementById('profile-btn').addEventListener('click', openProfileModal);
+      document.getElementById('logout-btn').addEventListener('click', () => _supabase.auth.signOut());
+
+      if (currentProfile?.is_admin) {
+        adminBtnContainer.classList.remove('hidden');
       } else {
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        adminBtnContainer.classList.add('hidden');
       }
-    }
-  }
-
-  // ---------- Fetch ad ----------
-  async function fetchAd() {
-    const { data, error } = await _supabase
-      .from('ads')
-      .select('content')
-      .eq('id', 1)
-      .single();
-    if (error) {
-      console.error('Error fetching ad:', error);
-      adContent = '<div class="bg-yellow-100 p-4 rounded-lg text-center text-black">Ad unavailable</div>';
     } else {
-      adContent = data.content;
+      postFormContainer.classList.add('hidden');
+      adminBtnContainer.classList.add('hidden');
+      authStateDiv.innerHTML = `<button id="show-login-btn" class="bg-[#1877f2] text-white px-4 py-1 rounded-lg">Log in</button>`;
+      document.getElementById('show-login-btn').addEventListener('click', () => {
+        authForms.classList.remove('hidden');
+      });
     }
+
+    loadPosts();
+    startPolling();
+    startActivityTicker();
   }
 
-  // ---------- Auth state ----------
-  _supabase.auth.getSession().then(({ data: { session } }) => {
-    currentUser = session?.user ?? null;
-    fetchCurrentProfile().then(() => {
-      fetchAd().then(() => {
-        loadPage('home');
+  // ---------- Poll for new posts ----------
+  function startPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    if (!currentUser) return;
+    pollInterval = setInterval(checkForNewPosts, 30000);
+  }
+  async function checkForNewPosts() {
+    if (!lastPostTimestamp) return;
+    const { data, error } = await _supabase
+      .from('posts')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error || !data.length) return;
+    const latest = new Date(data[0].created_at).getTime();
+    if (latest > lastPostTimestamp) {
+      document.getElementById('new-posts-banner').classList.add('show');
+    }
+  }
+  document.getElementById('new-posts-banner').addEventListener('click', () => {
+    document.getElementById('new-posts-banner').classList.remove('show');
+    loadPosts();
+  });
+
+  // ---------- Activity Ticker ----------
+  async function startActivityTicker() {
+    if (activityInterval) clearInterval(activityInterval);
+    await updateTicker();
+    activityInterval = setInterval(updateTicker, 10000);
+  }
+  async function updateTicker() {
+    const oneDayAgo = new Date(Date.now() - 24*60*60*1000).toISOString();
+
+    const { data: recentPosts } = await _supabase
+      .from('posts')
+      .select('id, user_id, created_at')
+      .gt('created_at', oneDayAgo)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    const userIds = [...new Set(recentPosts?.map(p => p.user_id) || [])];
+    const { data: profiles } = userIds.length ? await _supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds) : { data: [] };
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
+    const { data: newUsers } = await _supabase
+      .from('profiles')
+      .select('username, created_at')
+      .gt('created_at', oneDayAgo)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    let tickerText = '';
+    if (recentPosts) {
+      recentPosts.forEach(p => {
+        const username = profileMap[p.user_id]?.username || 'Someone';
+        tickerText += `📝 ${escapeHTML(username)} posted • `;
+      });
+    }
+    if (newUsers) {
+      newUsers.forEach(u => tickerText += `🎉 ${escapeHTML(u.username)} joined • `);
+    }
+    if (!tickerText) tickerText = '✨ No recent activity';
+    document.getElementById('ticker-text').innerText = tickerText;
+  }
+
+  // Full-screen activity log
+  window.openActivityLog = async function() {
+    const modal = document.getElementById('activity-modal');
+    const list = document.getElementById('activity-log-list');
+    const activities = [];
+
+    const { data: posts } = await _supabase
+      .from('posts')
+      .select('id, user_id, content, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    const userIdsPosts = [...new Set(posts?.map(p => p.user_id) || [])];
+    const { data: profilePosts } = userIdsPosts.length ? await _supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIdsPosts) : { data: [] };
+    const postProfileMap = Object.fromEntries((profilePosts || []).map(p => [p.id, p]));
+
+    posts?.forEach(p => {
+      activities.push({
+        type: 'post',
+        user: postProfileMap[p.user_id]?.username || 'Someone',
+        content: p.content,
+        time: p.created_at
       });
     });
-  });
 
-  _supabase.auth.onAuthStateChange((event, session) => {
-    currentUser = session?.user ?? null;
-    fetchCurrentProfile().then(() => {
-      fetchAd().then(() => {
-        loadPage('home');
-      });
-    });
-  });
-
-  // ---------- Navigation ----------
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const page = link.dataset.page;
-      loadPage(page);
-    });
-  });
-
-  async function loadPage(page) {
-    pageTitle.textContent = page.charAt(0).toUpperCase() + page.slice(1);
-    // Clear active class
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-nav', 'text-white'));
-    document.querySelectorAll(`[data-page="${page}"]`).forEach(l => {
-      l.classList.add('active-nav', 'text-white');
-    });
-    // Load content
-    if (page === 'home') {
-      await loadHome();
-    } else if (page === 'explore') {
-      await loadExplore();
-    } else if (page === 'profile') {
-      await loadProfile();
-    } else if (page === 'analytics') {
-      await loadAnalytics();
-    } else if (page === 'admin') {
-      if (currentProfile?.is_admin) await loadAdmin();
-      else loadPage('home');
-    }
-  }
-
-  // ---------- Home feed (similar to previous but styled X) ----------
-  async function loadHome() {
-    pageContent.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>';
-    await loadPosts('home');
-  }
-
-  async function loadExplore() {
-    pageContent.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>';
-    await loadPosts('explore');
-  }
-
-  async function loadProfile() {
-    if (!currentUser) {
-      pageContent.innerHTML = '<div class="text-center py-10">Please log in to view your profile.</div>';
-      return;
-    }
-    await loadPosts('profile', currentUser.id);
-  }
-
-  async function loadAnalytics() {
-    if (!currentUser) {
-      pageContent.innerHTML = '<div class="text-center py-10">Please log in to view analytics.</div>';
-      return;
-    }
-    // Fetch user stats
-    const { data: userPosts, error: postsError } = await _supabase
-      .from('posts')
-      .select('id, views, likesCount, commentsCount')
-      .eq('user_id', currentUser.id);
-
-    // For demo, we need to compute likes received and comments received.
-    // We'll do separate queries.
-    const { count: totalPosts } = await _supabase
-      .from('posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', currentUser.id);
-
-    const { count: totalLikesReceived } = await _supabase
-      .from('likes')
-      .select('*, posts!inner(user_id)', { count: 'exact', head: true })
-      .eq('posts.user_id', currentUser.id);
-
-    const { count: totalCommentsReceived } = await _supabase
+    const { data: comments } = await _supabase
       .from('comments')
-      .select('*, posts!inner(user_id)', { count: 'exact', head: true })
-      .eq('posts.user_id', currentUser.id);
+      .select('id, user_id, content, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    const userIdsComments = [...new Set(comments?.map(c => c.user_id) || [])];
+    const { data: profileComments } = userIdsComments.length ? await _supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIdsComments) : { data: [] };
+    const commentProfileMap = Object.fromEntries((profileComments || []).map(p => [p.id, p]));
 
-    const { data: totalViewsData } = await _supabase
-      .from('posts')
-      .select('views')
-      .eq('user_id', currentUser.id);
-    const totalViews = totalViewsData.reduce((sum, p) => sum + (p.views || 0), 0);
+    comments?.forEach(c => {
+      activities.push({
+        type: 'comment',
+        user: commentProfileMap[c.user_id]?.username || 'Someone',
+        content: c.content,
+        time: c.created_at
+      });
+    });
 
-    pageContent.innerHTML = `
-      <div class="bg-[#16181c] p-6 rounded-xl border border-gray-800">
-        <h3 class="text-xl font-bold mb-4">Your Analytics</h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-black p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400 text-sm">Total Posts</p>
-            <p class="text-3xl font-bold">${totalPosts || 0}</p>
-          </div>
-          <div class="bg-black p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400 text-sm">Total Views</p>
-            <p class="text-3xl font-bold">${totalViews}</p>
-          </div>
-          <div class="bg-black p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400 text-sm">Likes Received</p>
-            <p class="text-3xl font-bold">${totalLikesReceived || 0}</p>
-          </div>
-          <div class="bg-black p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400 text-sm">Comments Received</p>
-            <p class="text-3xl font-bold">${totalCommentsReceived || 0}</p>
-          </div>
-        </div>
-        ${!currentProfile?.verified ? `
-          <div class="mt-6">
-            <button id="request-monetization-btn" class="bg-[#1d9bf0] text-white px-6 py-3 rounded-full font-bold hover:bg-blue-600">
-              Request Verification
-            </button>
-          </div>
-        ` : `
-          <div class="mt-6 flex items-center gap-2 text-green-400">
-            <i class="fa-solid fa-circle-check text-2xl"></i>
-            <span>You are verified</span>
-          </div>
-        `}
-      </div>
-    `;
-    document.getElementById('request-monetization-btn')?.addEventListener('click', openMonetizationModal);
+    const { data: users } = await _supabase
+      .from('profiles')
+      .select('username, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    users?.forEach(u => {
+      activities.push({
+        type: 'signup',
+        user: u.username,
+        time: u.created_at
+      });
+    });
+
+    activities.sort((a,b) => new Date(b.time) - new Date(a.time));
+    list.innerHTML = activities.slice(0, 20).map(a => {
+      const time = timeAgo(a.time);
+      if (a.type === 'post') {
+        return `<div class="border-b pb-2 dark:border-gray-700">📝 <strong>${escapeHTML(a.user)}</strong> posted: “${escapeHTML(a.content.substring(0,50))}” <span class="text-xs text-gray-400">${time}</span></div>`;
+      }
+      if (a.type === 'comment') {
+        return `<div class="border-b pb-2 dark:border-gray-700">💬 <strong>${escapeHTML(a.user)}</strong> commented: “${escapeHTML(a.content.substring(0,50))}” <span class="text-xs text-gray-400">${time}</span></div>`;
+      }
+      if (a.type === 'signup') {
+        return `<div class="border-b pb-2 dark:border-gray-700">🎉 <strong>${escapeHTML(a.user)}</strong> joined <span class="text-xs text-gray-400">${time}</span></div>`;
+      }
+    }).join('');
+    modal.classList.add('show');
+  }
+  window.closeActivityLog = function() {
+    document.getElementById('activity-modal').classList.remove('show');
   }
 
-  async function loadAdmin() {
-    if (!currentProfile?.is_admin) return;
-    // Fetch all users
-    const { data: users, error } = await _supabase
+  // ---------- Login / Signup ----------
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const { error } = await _supabase.auth.signInWithPassword({ email, password });
+    if (error) alert('Login error: ' + error.message);
+  });
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const username = document.getElementById('signup-username').value;
+    const { error } = await _supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username } }
+    });
+    if (error) alert('Signup error: ' + error.message);
+    else alert('Check your email for confirmation!');
+  });
+
+  // ---------- Profile edit ----------
+  function openProfileModal() {
+    document.getElementById('edit-username').value = currentProfile?.username || '';
+    document.getElementById('edit-avatar').value = currentProfile?.avatar_url || '';
+    profileModal.classList.remove('hidden');
+  }
+  closeProfileModal.addEventListener('click', () => {
+    profileModal.classList.add('hidden');
+  });
+  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const username = document.getElementById('edit-username').value.trim();
+    const avatar_url = document.getElementById('edit-avatar').value.trim() || null;
+    if (!username) { alert('Username cannot be empty'); return; }
+    const { error } = await _supabase
       .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error(error);
-      return;
+      .update({ username, avatar_url })
+      .eq('id', currentUser.id);
+    if (error) alert('Update failed: ' + error.message);
+    else {
+      profileModal.classList.add('hidden');
+      await fetchCurrentProfile();
+      updateAuthUI(currentUser);
     }
-    // Count stats
-    const { count: totalUsers } = await _supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-    const { count: totalPosts } = await _supabase
-      .from('posts')
-      .select('*', { count: 'exact', head: true });
-    const { count: totalVerified } = await _supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('verified', true);
+  });
 
-    let usersHtml = users.map(u => `
-      <tr class="border-b border-gray-800">
-        <td class="p-2"><img src="${u.avatar_url || 'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full"></td>
-        <td class="p-2">${u.username}</td>
-        <td class="p-2">${u.email || ''}</td>
-        <td class="p-2">${u.verified ? '✅' : '❌'}</td>
-        <td class="p-2">${u.banned ? '🚫' : '✓'}</td>
-        <td class="p-2">
-          ${u.monetization_requested ? '<span class="text-yellow-400">Requested</span>' : ''}
-        </td>
-        <td class="p-2">
-          <button class="admin-ban-btn text-red-500 hover:text-red-400" data-user-id="${u.id}" data-banned="${u.banned}">
-            ${u.banned ? 'Unban' : 'Ban'}
-          </button>
-          <button class="admin-verify-btn text-blue-500 hover:text-blue-400 ml-2" data-user-id="${u.id}" data-verified="${u.verified}">
-            ${u.verified ? 'Revoke' : 'Verify'}
-          </button>
-          <button class="admin-approve-btn text-green-500 hover:text-green-400 ml-2" data-user-id="${u.id}" data-requested="${u.monetization_requested}">
-            Approve Request
-          </button>
-        </td>
-      </tr>
-    `).join('');
+  // ---------- Create new post ----------
+  document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const title = document.getElementById('post-title').value;
+    const content = document.getElementById('post-content').value;
+    const image_url = document.getElementById('post-image').value;
+    if (!content.trim()) { alert('Post content cannot be empty'); return; }
+    const { error } = await _supabase.from('posts').insert([
+      { user_id: currentUser.id, title, content, image_url }
+    ]);
+    if (!error) {
+      document.getElementById('post-title').value = '';
+      document.getElementById('post-content').value = '';
+      document.getElementById('post-image').value = '';
+      loadPosts();
+    } else alert('Error posting: ' + error.message);
+  });
 
-    pageContent.innerHTML = `
-      <div class="space-y-6">
-        <div class="grid grid-cols-3 gap-4">
-          <div class="bg-[#16181c] p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400">Total Users</p>
-            <p class="text-3xl font-bold">${totalUsers}</p>
-          </div>
-          <div class="bg-[#16181c] p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400">Total Posts</p>
-            <p class="text-3xl font-bold">${totalPosts}</p>
-          </div>
-          <div class="bg-[#16181c] p-4 rounded-lg border border-gray-800">
-            <p class="text-gray-400">Verified Users</p>
-            <p class="text-3xl font-bold">${totalVerified}</p>
-          </div>
-        </div>
-        <div class="bg-[#16181c] p-4 rounded-lg border border-gray-800 overflow-x-auto">
-          <h3 class="text-xl font-bold mb-4">User Management</h3>
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-gray-400">
-                <th class="p-2">Avatar</th>
-                <th class="p-2">Username</th>
-                <th class="p-2">Email</th>
-                <th class="p-2">Verified</th>
-                <th class="p-2">Banned</th>
-                <th class="p-2">Request</th>
-                <th class="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${usersHtml}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    // Attach admin action listeners
-    document.querySelectorAll('.admin-ban-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const userId = btn.dataset.userId;
-        const banned = btn.dataset.banned === 'true';
-        await _supabase
-          .from('profiles')
-          .update({ banned: !banned })
-          .eq('id', userId);
-        loadAdmin();
-      });
-    });
-    document.querySelectorAll('.admin-verify-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const userId = btn.dataset.userId;
-        const verified = btn.dataset.verified === 'true';
-        await _supabase
-          .from('profiles')
-          .update({ verified: !verified, monetization_requested: false })
-          .eq('id', userId);
-        loadAdmin();
-      });
-    });
-    document.querySelectorAll('.admin-approve-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const userId = btn.dataset.userId;
-        const requested = btn.dataset.requested === 'true';
-        if (!requested) return;
-        await _supabase
-          .from('profiles')
-          .update({ verified: true, monetization_requested: false })
-          .eq('id', userId);
-        loadAdmin();
-      });
-    });
+  // ---------- Increment view (with monetization trigger) ----------
+  async function incrementView(postId) {
+    if (viewedPosts.has(postId)) return;
+    viewedPosts.add(postId);
+    const { error } = await _supabase.rpc('increment_post_view', { post_id: postId });
+    if (error) console.warn('View increment failed:', error);
   }
 
-  // ---------- Load posts (shared for home/explore/profile) ----------
-  async function loadPosts(context, userId = null) {
-    let query = _supabase
+  // ---------- Load posts ----------
+  async function loadPosts() {
+    const { data: fetchedPosts, error } = await _supabase
       .from('posts')
       .select('*')
       .order('created_at', { ascending: false });
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    const { data: fetchedPosts, error } = await query;
-    if (error) {
-      console.error(error);
-      return;
-    }
+    if (error) { console.error(error); return; }
     posts = fetchedPosts;
 
-    // Update last timestamp for new post detection
     if (posts.length > 0) {
       const latest = new Date(posts[0].created_at).getTime();
-      if (!window.lastPostTimestamp) window.lastPostTimestamp = latest;
-      else if (latest > window.lastPostTimestamp) {
-        window.lastPostTimestamp = latest;
-        newPostsBanner.classList.add('show');
-      }
+      if (!lastPostTimestamp) lastPostTimestamp = latest;
+      else if (latest > lastPostTimestamp) lastPostTimestamp = latest;
     }
 
-    // Fetch profiles for authors
     const userIds = [...new Set(posts.map(p => p.user_id))];
     const { data: profiles } = await _supabase
       .from('profiles')
-      .select('id, username, avatar_url, is_admin, verified, last_active')
+      .select('id, username, avatar_url, is_admin')
       .in('id', userIds);
     const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
 
-    // Enrich posts
+    const { data: adsData } = await _supabase.from('ads').select('*').eq('active', true);
+    ads = adsData || [];
+
     const postsWithMeta = await Promise.all(posts.map(async (post) => {
-      const profile = profileMap[post.user_id] || { username: 'anonymous', avatar_url: null, verified: false, last_active: null };
-
-      const { count: likesCount } = await _supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-
+      const profile = profileMap[post.user_id] || { username: 'anonymous', avatar_url: null, is_admin: false };
+      const { count: likesCount } = await _supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', post.id);
       let likedByMe = false;
       if (currentUser) {
-        const { data: userLike } = await _supabase
-          .from('likes')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
+        const { data: userLike } = await _supabase.from('likes').select('id').eq('post_id', post.id).eq('user_id', currentUser.id).maybeSingle();
         likedByMe = !!userLike;
       }
-
-      const { count: commentsCount } = await _supabase
-        .from('comments')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-
-      const { count: sharesCount } = await _supabase
-        .from('shares')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-
-      // Increment view if not viewed
-      if (!viewedPosts.has(post.id)) {
-        viewedPosts.add(post.id);
-        await _supabase
-          .from('posts')
-          .update({ views: supabase.raw('views + 1') })
-          .eq('id', post.id);
-      }
-
-      return {
-        ...post,
-        profiles: profile,
-        likesCount: likesCount || 0,
-        likedByMe,
-        commentsCount: commentsCount || 0,
-        sharesCount: sharesCount || 0
-      };
+      const { count: commentsCount } = await _supabase.from('comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id);
+      const { count: sharesCount } = await _supabase.from('shares').select('*', { count: 'exact', head: true }).eq('post_id', post.id);
+      incrementView(post.id);
+      return { ...post, profiles: profile, likesCount: likesCount || 0, likedByMe, commentsCount: commentsCount || 0, sharesCount: sharesCount || 0 };
     }));
 
-    renderPosts(postsWithMeta, context);
+    renderPosts(postsWithMeta);
   }
 
-  function renderPosts(posts, context) {
+  // ---------- Render posts (with admin highlighting) ----------
+  function renderPosts(posts) {
     let html = '';
-    posts.forEach((post, index) => {
+    let adIndex = 0;
+    posts.forEach((post, idx) => {
       const likeIconClass = post.likedByMe ? 'fa-solid' : 'fa-regular';
-      const likeActiveClass = post.likedByMe ? 'text-[#1d9bf0]' : '';
+      const likeActiveClass = post.likedByMe ? 'like-active' : '';
 
-      const words = (post.content || '').split(' ');
+      const escapedTitle = escapeHTML(post.title);
+      const escapedContent = escapeHTML(post.content || '');
+      const escapedUsername = escapeHTML(post.profiles?.username || 'anonymous');
+      const escapedAvatar = escapeHTML(post.profiles?.avatar_url || 'https://via.placeholder.com/40');
+
+      const words = escapedContent.split(' ');
       const isLong = words.length > 20;
-      const shortContent = isLong ? words.slice(0, 20).join(' ') + '...' : post.content;
-      const fullContent = post.content;
+      const shortContent = isLong ? words.slice(0, 20).join(' ') + '...' : escapedContent;
+      const fullContent = escapedContent;
 
       const canEdit = currentUser && currentUser.id === post.user_id && isWithin30Minutes(post.created_at);
       const canDelete = currentUser && currentUser.id === post.user_id;
 
-      const profile = post.profiles;
-      const online = isOnline(profile.last_active);
+      // Add special styling for admin posts
+      const isAdminPost = post.profiles?.is_admin;
+      const adminBorderClass = isAdminPost ? 'border-2 border-blue-500' : '';
+      const adminBadge = isAdminPost ? '<span class="ml-1 text-blue-600"><i class="fa-solid fa-crown"></i></span>' : '';
 
       html += `
-        <div class="bg-black border border-gray-800 rounded-xl p-4 mb-4" data-post-id="${post.id}">
-          <div class="flex gap-3">
-            <div class="avatar-container flex-shrink-0">
-              <img src="${profile.avatar_url || 'https://via.placeholder.com/48'}" class="post-avatar">
-              ${online ? '<span class="online-dot"></span>' : ''}
-            </div>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden dark:bg-gray-800 dark:text-white ${adminBorderClass}" data-post-id="${post.id}">
+          <div class="flex items-center gap-3 p-4">
+            <img src="${escapedAvatar}" class="w-10 h-10 rounded-full object-cover" onerror="this.src='https://via.placeholder.com/40'">
             <div class="flex-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-bold">${profile.username}</span>
-                ${profile.verified ? '<i class="fa-solid fa-circle-check verified-badge"></i>' : ''}
-                <span class="text-gray-500 text-sm">· ${timeAgo(post.created_at)}</span>
-                ${canEdit ? `
-                  <button class="edit-post-btn ml-auto text-gray-500 hover:text-[#1d9bf0]" data-post-id="${post.id}">
-                    <i class="fa-regular fa-pen-to-square"></i>
-                  </button>
-                ` : ''}
-                ${canDelete ? `
-                  <button class="delete-post-btn text-gray-500 hover:text-red-500" data-post-id="${post.id}">
-                    <i class="fa-regular fa-trash-can"></i>
-                  </button>
-                ` : ''}
-              </div>
-              ${post.title ? `<h3 class="font-bold text-lg mt-1">${post.title}</h3>` : ''}
-              <div class="post-content mt-1">
-                <span class="short-content">${shortContent}</span>
-                ${isLong ? `<span class="full-content hidden">${fullContent}</span> <button class="see-more text-[#1d9bf0] hover:underline text-sm ml-1">see more</button>` : ''}
-              </div>
-              ${post.image_url ? `<img src="${post.image_url}" class="mt-3 rounded-xl max-h-96 w-full object-cover" onerror="this.src='https://via.placeholder.com/600x400'">` : ''}
-              <div class="flex items-center justify-between mt-3 text-gray-500">
-                <div class="relative">
-                  <button class="like-btn flex items-center gap-2 px-3 py-2 rounded-full hover:bg-[#1d9bf0]/10 ${likeActiveClass}" data-post-id="${post.id}">
-                    <i class="${likeIconClass} fa-thumbs-up"></i>
-                    <span class="like-count text-sm">${post.likesCount}</span>
-                  </button>
-                  <div class="reaction-picker">
-                    <span class="reaction-emoji" data-reaction="like">👍</span>
-                    <span class="reaction-emoji" data-reaction="love">❤️</span>
-                    <span class="reaction-emoji" data-reaction="haha">😂</span>
-                    <span class="reaction-emoji" data-reaction="wow">😮</span>
-                    <span class="reaction-emoji" data-reaction="sad">😢</span>
-                    <span class="reaction-emoji" data-reaction="angry">😡</span>
-                  </div>
-                </div>
-                <button class="toggle-comments flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-800" data-post-id="${post.id}">
-                  <i class="fa-regular fa-comment"></i>
-                  <span class="comment-count text-sm">${post.commentsCount}</span>
-                </button>
-                <button class="share-btn flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-800" data-post-id="${post.id}" data-title="${post.title || 'Check this out'}">
-                  <i class="fa-regular fa-share-from-square"></i>
-                  <span class="share-count text-sm">${post.sharesCount}</span>
-                </button>
-                <span class="flex items-center gap-1 text-sm" title="Views">
-                  <i class="fa-regular fa-eye"></i> ${post.views || 0}
-                </span>
-              </div>
-              <!-- Comments section -->
-              <div class="comments-section hidden mt-4 border-t border-gray-800 pt-4 space-y-3" data-post-id="${post.id}">
-                <div class="comments-list space-y-2"></div>
-                <div class="flex gap-2">
-                  <input type="text" placeholder="Post your reply" class="comment-input flex-1 bg-black border border-gray-700 rounded-full px-4 py-2 text-sm text-white" ${currentUser ? '' : 'disabled'}>
-                  <button class="add-comment bg-[#1d9bf0] text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-blue-600 ${currentUser ? '' : 'opacity-50 cursor-not-allowed'}" ${currentUser ? '' : 'disabled'}>Reply</button>
-                </div>
-              </div>
+              <p class="font-semibold">${escapedUsername} ${adminBadge}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">${timeAgo(post.created_at)}</p>
             </div>
+            <div class="flex items-center gap-2 text-gray-500">
+              <span class="flex items-center gap-1 text-sm" title="Views"><i class="fa-regular fa-eye"></i> ${post.views || 0}</span>
+              ${canEdit ? `<button class="edit-post-btn hover:text-blue-600" data-post-id="${post.id}"><i class="fa-regular fa-pen-to-square"></i></button>` : ''}
+              ${canDelete ? `<button class="delete-post-btn hover:text-red-600" data-post-id="${post.id}"><i class="fa-regular fa-trash-can"></i></button>` : ''}
+            </div>
+          </div>
+          <div class="px-4 pb-2">
+            ${escapedTitle ? `<h3 class="font-bold text-lg">${escapedTitle}</h3>` : ''}
+            <div class="post-content text-gray-800 dark:text-gray-200">
+              <span class="short-content">${shortContent}</span>
+              ${isLong ? `<span class="full-content hidden">${fullContent}</span> <button class="see-more text-blue-600 hover:underline text-sm ml-1">see more</button>` : ''}
+            </div>
+          </div>
+          ${post.image_url ? `<img src="${escapeHTML(post.image_url)}" class="w-full max-h-96 object-cover" onerror="this.src='https://via.placeholder.com/600x400'">` : ''}
+          <div class="flex items-center justify-around border-t border-gray-100 p-2 text-gray-500 dark:border-gray-700">
+            <button class="like-btn flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${likeActiveClass}" data-post-id="${post.id}">
+              <i class="${likeIconClass} fa-thumbs-up"></i> <span class="like-count">${post.likesCount}</span>
+            </button>
+            <button class="toggle-comments flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" data-post-id="${post.id}">
+              <i class="fa-regular fa-comment"></i> <span class="comment-count">${post.commentsCount}</span>
+            </button>
+            <button class="share-btn flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" data-post-id="${post.id}" data-title="${escapedTitle || 'Check this out'}">
+              <i class="fa-regular fa-share-from-square"></i> <span class="share-count">${post.sharesCount}</span>
+            </button>
+          </div>
+          <div class="comments-section hidden border-t border-gray-100 p-4 space-y-3 dark:border-gray-700" data-post-id="${post.id}">
+            <div class="comments-list space-y-2"></div>
+            <div class="flex gap-2">
+              <input type="text" placeholder="Write a comment..." class="comment-input flex-1 p-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" ${currentUser ? '' : 'disabled'}>
+              <button class="add-comment bg-[#1877f2] text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 ${currentUser ? '' : 'opacity-50 cursor-not-allowed'}" ${currentUser ? '' : 'disabled'}>Post</button>
+            </div>
+            ${!currentUser ? '<p class="text-xs text-gray-400 mt-1">Log in to comment</p>' : ''}
           </div>
         </div>
       `;
 
-      // Insert ad after second post (if home/explore)
-      if (index === 1 && context === 'home') {
+      if ((idx === 1 || idx === 4) && ads.length > 0) {
+        const ad = ads[adIndex % ads.length];
         html += `
-          <div class="relative bg-[#16181c] border border-gray-800 rounded-xl p-4 my-4">
-            ${currentProfile?.is_admin ? `
-              <button class="edit-ad-btn absolute top-2 right-2 bg-[#1d9bf0] text-white px-3 py-1 rounded-full text-xs z-10 hover:bg-blue-600">
-                <i class="fa-solid fa-pen"></i> Edit Ad
-              </button>
-            ` : ''}
-            <div class="ad-container">${adContent}</div>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden my-4 dark:bg-gray-800 relative">
+            <a href="${escapeHTML(ad.link_url || '#')}" target="_blank" rel="noopener" class="block">
+              <img src="${escapeHTML(ad.image_url)}" class="w-full max-h-40 object-cover" onerror="this.src='https://via.placeholder.com/600x200?text=Ad'">
+              <div class="p-2 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                <span>${escapeHTML(ad.promoted_text)}</span>
+                <span>Promoted</span>
+              </div>
+            </a>
           </div>
         `;
+        adIndex++;
       }
     });
 
-    if (posts.length === 0) {
-      html = '<div class="text-center py-10 text-gray-500">No posts yet.</div>';
-    }
+    postsContainer.innerHTML = html;
 
-    pageContent.innerHTML = html;
-
-    // Attach listeners
     document.querySelectorAll('.like-btn').forEach(btn => btn.addEventListener('click', handleLike));
-    document.querySelectorAll('.reaction-emoji').forEach(emoji => emoji.addEventListener('click', handleReaction));
     document.querySelectorAll('.toggle-comments').forEach(btn => btn.addEventListener('click', toggleComments));
     document.querySelectorAll('.share-btn').forEach(btn => btn.addEventListener('click', handleShare));
-    document.querySelectorAll('.add-comment').forEach(btn => {
-      if (!btn.disabled) btn.addEventListener('click', addComment);
-    });
+    document.querySelectorAll('.add-comment').forEach(btn => { if (!btn.disabled) btn.addEventListener('click', addComment); });
     document.querySelectorAll('.see-more').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const contentDiv = e.target.closest('.post-content');
@@ -786,30 +844,23 @@
         deletePost(postId);
       });
     });
-    document.querySelectorAll('.edit-ad-btn').forEach(btn => {
-      btn.addEventListener('click', openAdModal);
-    });
   }
 
-  // ---------- Like / reaction ----------
+  // ---------- Like / Unlike ----------
   async function handleLike(e) {
     const btn = e.currentTarget;
-    if (!currentUser) {
-      alert('Please log in to like.');
-      return;
-    }
+    if (!currentUser) { authForms.classList.remove('hidden'); return; }
     const postId = btn.dataset.postId;
     const likeCountSpan = btn.querySelector('.like-count');
     const icon = btn.querySelector('i');
-    const wasLiked = btn.classList.contains('text-[#1d9bf0]');
+    const wasLiked = btn.classList.contains('like-active');
 
-    // Optimistic
     if (wasLiked) {
-      btn.classList.remove('text-[#1d9bf0]');
+      btn.classList.remove('like-active');
       icon.classList.replace('fa-solid', 'fa-regular');
       likeCountSpan.textContent = parseInt(likeCountSpan.textContent) - 1;
     } else {
-      btn.classList.add('text-[#1d9bf0]');
+      btn.classList.add('like-active');
       icon.classList.replace('fa-regular', 'fa-solid');
       likeCountSpan.textContent = parseInt(likeCountSpan.textContent) + 1;
     }
@@ -821,24 +872,17 @@
       ({ error } = await _supabase.from('likes').insert({ user_id: currentUser.id, post_id: postId }));
     }
     if (error) {
-      // revert
       if (wasLiked) {
-        btn.classList.add('text-[#1d9bf0]');
+        btn.classList.add('like-active');
         icon.classList.replace('fa-regular', 'fa-solid');
         likeCountSpan.textContent = parseInt(likeCountSpan.textContent) + 1;
       } else {
-        btn.classList.remove('text-[#1d9bf0]');
+        btn.classList.remove('like-active');
         icon.classList.replace('fa-solid', 'fa-regular');
         likeCountSpan.textContent = parseInt(likeCountSpan.textContent) - 1;
       }
-      alert('Error: ' + error.message);
+      alert('Action failed: ' + error.message);
     }
-  }
-
-  async function handleReaction(e) {
-    const emoji = e.currentTarget;
-    const likeBtn = emoji.closest('.relative').querySelector('.like-btn');
-    if (likeBtn) await handleLike({ currentTarget: likeBtn });
   }
 
   // ---------- Comments ----------
@@ -853,58 +897,52 @@
       section.classList.add('hidden');
     }
   }
-
   async function loadComments(postId) {
     const list = document.querySelector(`.comments-section[data-post-id="${postId}"] .comments-list`);
-    const { data: comments, error } = await _supabase
+    const { data: comments } = await _supabase
       .from('comments')
-      .select('*')
+      .select('user_id, content, created_at')
       .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-    if (error) return;
-
-    const userIds = [...new Set(comments.map(c => c.user_id))];
-    const { data: profiles } = await _supabase
+      .order('created_at');
+    const userIds = [...new Set(comments?.map(c => c.user_id) || [])];
+    const { data: profiles } = userIds.length ? await _supabase
       .from('profiles')
       .select('id, username, avatar_url')
-      .in('id', userIds);
+      .in('id', userIds) : { data: [] };
     const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
 
-    list.innerHTML = comments.map(c => {
-      const p = profileMap[c.user_id] || { username: 'anonymous', avatar_url: null };
+    list.innerHTML = (comments || []).map(c => {
+      const profile = profileMap[c.user_id] || { username: 'anonymous', avatar_url: null };
+      const escapedComment = escapeHTML(c.content);
+      const escapedUsername = escapeHTML(profile.username);
+      const escapedAvatar = escapeHTML(profile.avatar_url || 'https://via.placeholder.com/24');
       return `
         <div class="flex gap-2 text-sm">
-          <img src="${p.avatar_url || 'https://via.placeholder.com/24'}" class="w-6 h-6 rounded-full">
-          <div class="bg-[#16181c] p-2 rounded-lg flex-1">
-            <span class="font-bold">${p.username}</span>
-            <span class="text-gray-300">${c.content}</span>
-            <p class="text-xs text-gray-500 mt-1">${timeAgo(c.created_at)}</p>
+          <img src="${escapedAvatar}" class="w-6 h-6 rounded-full" onerror="this.src='https://via.placeholder.com/24'">
+          <div class="bg-gray-100 p-2 rounded-lg flex-1 dark:bg-gray-700">
+            <span class="font-semibold dark:text-white">${escapedUsername}</span>
+            <span class="text-gray-700 dark:text-gray-300">${escapedComment}</span>
+            <p class="text-xs text-gray-400 mt-1">${timeAgo(c.created_at)}</p>
           </div>
         </div>
       `;
     }).join('');
   }
-
   async function addComment(e) {
+    if (!currentUser) { authForms.classList.remove('hidden'); return; }
     const btn = e.currentTarget;
-    if (!currentUser) return;
     const section = btn.closest('.comments-section');
     const postId = section.dataset.postId;
     const input = section.querySelector('.comment-input');
     const content = input.value.trim();
     if (!content) return;
-
-    const { error } = await _supabase
-      .from('comments')
-      .insert({ user_id: currentUser.id, post_id: postId, content });
+    const { error } = await _supabase.from('comments').insert({ user_id: currentUser.id, post_id: postId, content });
     if (!error) {
       input.value = '';
       await loadComments(postId);
       const countSpan = document.querySelector(`.toggle-comments[data-post-id="${postId}"] .comment-count`);
       countSpan.textContent = parseInt(countSpan.textContent) + 1;
-    } else {
-      alert('Error: ' + error.message);
-    }
+    } else alert('Failed to post comment: ' + error.message);
   }
 
   // ---------- Share ----------
@@ -912,37 +950,18 @@
     const btn = e.currentTarget;
     const postId = btn.dataset.postId;
     const title = btn.dataset.title;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(title)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
     if (currentUser) {
-      const { error } = await _supabase
-        .from('shares')
-        .insert({ user_id: currentUser.id, post_id: postId });
+      const { error } = await _supabase.from('shares').insert({ user_id: currentUser.id, post_id: postId });
       if (!error) {
-        const countSpan = btn.querySelector('.share-count');
-        countSpan.textContent = parseInt(countSpan.textContent) + 1;
-      } else if (error.code !== '23505') {
-        console.error(error);
-      }
+        const shareCountSpan = btn.querySelector('.share-count');
+        shareCountSpan.textContent = parseInt(shareCountSpan.textContent) + 1;
+      } else if (error.code !== '23505') console.error('Share error:', error);
     }
   }
 
-  // ---------- Delete post ----------
-  async function deletePost(postId) {
-    if (!currentUser) return;
-    if (!confirm('Delete this post?')) return;
-    const { error } = await _supabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
-      .eq('user_id', currentUser.id);
-    if (!error) {
-      loadPage('home');
-    } else {
-      alert('Delete failed: ' + error.message);
-    }
-  }
-
-  // ---------- Edit post modal ----------
+  // ---------- Edit / Delete Post ----------
   function openEditPostModal(post) {
     document.getElementById('edit-post-id').value = post.id;
     document.getElementById('edit-post-title').value = post.title || '';
@@ -950,127 +969,385 @@
     document.getElementById('edit-post-image').value = post.image_url || '';
     editPostModal.classList.remove('hidden');
   }
-  document.getElementById('close-edit-post-modal').addEventListener('click', () => editPostModal.classList.add('hidden'));
+  closeEditPostModal.addEventListener('click', () => {
+    editPostModal.classList.add('hidden');
+  });
   document.getElementById('edit-post-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) return;
-    const id = document.getElementById('edit-post-id').value;
+    const postId = document.getElementById('edit-post-id').value;
     const title = document.getElementById('edit-post-title').value;
     const content = document.getElementById('edit-post-content').value.trim();
     const image_url = document.getElementById('edit-post-image').value || null;
-    if (!content) return alert('Content required');
-    const post = posts.find(p => p.id === id);
+    if (!content) { alert('Content cannot be empty'); return; }
+    const post = posts.find(p => p.id === postId);
     if (!post || !isWithin30Minutes(post.created_at)) {
-      alert('Edit window expired');
+      alert('You can only edit posts within 30 minutes of creation.');
       editPostModal.classList.add('hidden');
       return;
     }
-    const { error } = await _supabase
-      .from('posts')
-      .update({ title, content, image_url })
-      .eq('id', id)
-      .eq('user_id', currentUser.id);
-    if (!error) {
+    const { error } = await _supabase.from('posts').update({ title, content, image_url }).eq('id', postId).eq('user_id', currentUser.id);
+    if (error) alert('Update failed: ' + error.message);
+    else {
       editPostModal.classList.add('hidden');
-      loadPage('home');
-    } else {
-      alert('Update failed: ' + error.message);
+      loadPosts();
     }
   });
-
-  // ---------- Profile modal ----------
-  function openProfileModal() {
-    if (!currentProfile) return;
-    document.getElementById('edit-username').value = currentProfile.username || '';
-    document.getElementById('edit-avatar').value = currentProfile.avatar_url || '';
-    profileModal.classList.remove('hidden');
+  async function deletePost(postId) {
+    if (!currentUser || !confirm('Are you sure?')) return;
+    const { error } = await _supabase.from('posts').delete().eq('id', postId).eq('user_id', currentUser.id);
+    if (error) alert('Delete failed: ' + error.message);
+    else loadPosts();
   }
-  document.getElementById('close-profile-modal').addEventListener('click', () => profileModal.classList.add('hidden'));
-  document.getElementById('profile-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    const username = document.getElementById('edit-username').value.trim();
-    const avatar_url = document.getElementById('edit-avatar').value.trim() || null;
-    if (!username) return alert('Username required');
-    const { error } = await _supabase
-      .from('profiles')
-      .update({ username, avatar_url })
-      .eq('id', currentUser.id);
-    if (!error) {
-      profileModal.classList.add('hidden');
-      await fetchCurrentProfile();
-    } else {
-      alert('Update failed: ' + error.message);
-    }
-  });
 
-  // ---------- Ad modal ----------
-  function openAdModal() {
-    document.getElementById('ad-content').value = adContent;
-    adModal.classList.remove('hidden');
+  // ---------- Admin Dashboard ----------
+  window.openAdminDashboard = async function() {
+    adminModal.classList.remove('hidden');
+    await loadAdminDashboard();
+    await loadAdminPosts();
+    await loadAdminUsers();
+    await loadAdminAds();
+    initAnalyticsChart();
   }
-  document.getElementById('close-ad-modal').addEventListener('click', () => adModal.classList.add('hidden'));
-  document.getElementById('ad-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentProfile?.is_admin) return alert('Unauthorized');
-    const newContent = document.getElementById('ad-content').value;
-    const { error } = await _supabase
-      .from('ads')
-      .update({ content: newContent })
-      .eq('id', 1);
-    if (!error) {
-      adContent = newContent;
-      adModal.classList.add('hidden');
-      loadPage('home');
-    } else {
-      alert('Update failed: ' + error.message);
-    }
-  });
-
-  // ---------- Monetization modal ----------
-  function openMonetizationModal() {
-    monetizationModal.classList.remove('hidden');
+  window.closeAdminDashboard = function() {
+    adminModal.classList.add('hidden');
   }
-  document.getElementById('close-monetization-modal').addEventListener('click', () => monetizationModal.classList.add('hidden'));
-  document.getElementById('monetization-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    const { error } = await _supabase
-      .from('profiles')
-      .update({ monetization_requested: true })
-      .eq('id', currentUser.id);
-    if (!error) {
-      monetizationModal.classList.add('hidden');
-      alert('Request submitted. Admin will review.');
-    } else {
-      alert('Error: ' + error.message);
-    }
+  // Tab switching
+  document.querySelectorAll('.admin-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(b => {
+        b.classList.remove('active', 'text-blue-600', 'border-blue-600');
+        b.classList.add('text-gray-600', 'dark:text-gray-400');
+      });
+      btn.classList.add('active', 'text-blue-600', 'border-blue-600');
+      btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      document.querySelector(`.tab-pane[data-pane="${btn.dataset.tab}"]`).classList.remove('hidden');
+    });
   });
 
-  // ---------- Sidebar logout ----------
-  document.getElementById('sidebar-logout').addEventListener('click', () => _supabase.auth.signOut());
+  async function loadAdminDashboard() {
+    const { count: users } = await _supabase.from('profiles').select('*', { count: 'exact', head: true });
+    const { count: posts } = await _supabase.from('posts').select('*', { count: 'exact', head: true });
+    const { data: viewsSum } = await _supabase.from('posts').select('views');
+    const totalViews = viewsSum?.reduce((acc, p) => acc + (p.views || 0), 0) || 0;
+    const { count: likes } = await _supabase.from('likes').select('*', { count: 'exact', head: true });
+    document.getElementById('stat-users').textContent = users || 0;
+    document.getElementById('stat-posts').textContent = posts || 0;
+    document.getElementById('stat-views').textContent = totalViews;
+    document.getElementById('stat-likes').textContent = likes || 0;
+  }
 
-  // ---------- New posts banner click ----------
-  newPostsBanner.addEventListener('click', () => {
-    newPostsBanner.classList.remove('show');
-    loadPage('home');
-  });
-
-  // ---------- Poll for new posts ----------
-  setInterval(async () => {
-    if (!window.lastPostTimestamp) return;
-    const { data } = await _supabase
+  async function loadAdminPosts() {
+    const { data: posts } = await _supabase
       .from('posts')
-      .select('created_at')
-      .order('created_at', { ascending: false })
-      .limit(1);
-    if (data && data.length) {
-      const latest = new Date(data[0].created_at).getTime();
-      if (latest > window.lastPostTimestamp) {
-        newPostsBanner.classList.add('show');
-      }
+      .select('id, user_id, title, content, views, monetization_requested, monetization_approved, created_at')
+      .order('created_at', { ascending: false });
+    const userIds = [...new Set(posts?.map(p => p.user_id) || [])];
+    const { data: profiles } = userIds.length ? await _supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds) : { data: [] };
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
+    const list = document.getElementById('admin-posts-list');
+    list.innerHTML = (posts || []).map(p => {
+      const username = profileMap[p.user_id]?.username || 'anonymous';
+      return `
+        <div class="border p-3 rounded dark:border-gray-700 flex justify-between items-start">
+          <div>
+            <p><strong>${escapeHTML(username)}</strong> • ${timeAgo(p.created_at)} • 👁️ ${p.views}</p>
+            <p class="text-sm">${escapeHTML(p.content?.substring(0,100))}</p>
+            <p class="text-xs">Monetization: ${p.monetization_approved ? '✅ Approved' : (p.monetization_requested ? '⏳ Requested' : '❌ None')}</p>
+          </div>
+          <div class="flex gap-2">
+            ${!p.monetization_approved && p.monetization_requested ? `<button onclick="approveMonetization('${p.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs">Approve</button>` : ''}
+            ${!p.monetization_approved && p.monetization_requested ? `<button onclick="rejectMonetization('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">Reject</button>` : ''}
+            <button onclick="deletePostAdmin('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  window.approveMonetization = async (postId) => {
+    await _supabase.from('posts').update({ monetization_approved: true, monetization_requested: false }).eq('id', postId);
+    loadAdminPosts();
+  }
+  window.rejectMonetization = async (postId) => {
+    await _supabase.from('posts').update({ monetization_requested: false }).eq('id', postId);
+    loadAdminPosts();
+  }
+  window.deletePostAdmin = async (postId) => {
+    if (!confirm('Delete this post?')) return;
+    await _supabase.from('posts').delete().eq('id', postId);
+    loadAdminPosts();
+    loadPosts();
+  }
+
+  async function loadAdminUsers() {
+    const { data: users } = await _supabase
+      .from('profiles')
+      .select('id, username, is_admin, created_at');
+    const userPostCounts = {};
+    const { data: allPosts } = await _supabase.from('posts').select('user_id');
+    allPosts?.forEach(p => { userPostCounts[p.user_id] = (userPostCounts[p.user_id] || 0) + 1; });
+
+    const list = document.getElementById('admin-users-list');
+    list.innerHTML = (users || []).map(u => `
+      <div class="border p-3 rounded dark:border-gray-700 flex justify-between items-center">
+        <div>
+          <p><strong>${escapeHTML(u.username)}</strong> (${u.is_admin ? 'Admin' : 'User'})</p>
+          <p class="text-sm">Joined ${timeAgo(u.created_at)} • Posts: ${userPostCounts[u.id] || 0}</p>
+        </div>
+        <button onclick="deleteUser('${u.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+      </div>
+    `).join('');
+  }
+  window.deleteUser = async (userId) => {
+    if (!confirm('Delete this user? This will also delete their posts, likes, comments.')) return;
+    await _supabase.from('profiles').delete().eq('id', userId);
+    loadAdminUsers();
+  }
+
+  async function loadAdminAds() {
+    const { data: ads } = await _supabase.from('ads').select('*').order('created_at');
+    const list = document.getElementById('admin-ads-list');
+    list.innerHTML = (ads || []).map(ad => `
+      <div class="border p-3 rounded dark:border-gray-700 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <img src="${escapeHTML(ad.image_url)}" class="w-16 h-16 object-cover rounded">
+          <div>
+            <p><strong>${escapeHTML(ad.promoted_text)}</strong> ${ad.active ? '🟢' : '🔴'}</p>
+            <a href="${escapeHTML(ad.link_url || '#')}" target="_blank" class="text-blue-600 text-sm">${ad.link_url || 'no link'}</a>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="editAd('${ad.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Edit</button>
+          <button onclick="deleteAd('${ad.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+          <button onclick="toggleAdActive('${ad.id}', ${!ad.active})" class="bg-gray-600 text-white px-2 py-1 rounded text-xs">${ad.active ? 'Deactivate' : 'Activate'}</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  window.showAddAdForm = () => {
+    document.getElementById('ad-form-title').textContent = 'Add New Ad';
+    document.getElementById('ad-id').value = '';
+    document.getElementById('ad-image').value = '';
+    document.getElementById('ad-link').value = '';
+    document.getElementById('ad-promoted').value = 'Promoted';
+    document.getElementById('ad-active').checked = true;
+    adFormModal.classList.remove('hidden');
+  }
+  window.editAd = async (adId) => {
+    const { data } = await _supabase.from('ads').select('*').eq('id', adId).single();
+    if (data) {
+      document.getElementById('ad-form-title').textContent = 'Edit Ad';
+      document.getElementById('ad-id').value = data.id;
+      document.getElementById('ad-image').value = data.image_url;
+      document.getElementById('ad-link').value = data.link_url || '';
+      document.getElementById('ad-promoted').value = data.promoted_text;
+      document.getElementById('ad-active').checked = data.active;
+      adFormModal.classList.remove('hidden');
     }
-  }, 30000);
+  }
+  window.closeAdForm = () => adFormModal.classList.add('hidden');
+  document.getElementById('ad-edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('ad-id').value;
+    const image_url = document.getElementById('ad-image').value;
+    const link_url = document.getElementById('ad-link').value || null;
+    const promoted_text = document.getElementById('ad-promoted').value;
+    const active = document.getElementById('ad-active').checked;
+    if (!image_url) { alert('Image URL required'); return; }
+    const adData = { image_url, link_url, promoted_text, active };
+    let error;
+    if (id) {
+      ({ error } = await _supabase.from('ads').update(adData).eq('id', id));
+    } else {
+      ({ error } = await _supabase.from('ads').insert([adData]));
+    }
+    if (error) alert('Error saving ad: ' + error.message);
+    else {
+      closeAdForm();
+      loadAdminAds();
+      loadPosts();
+    }
+  });
+  window.deleteAd = async (adId) => {
+    if (!confirm('Delete this ad?')) return;
+    await _supabase.from('ads').delete().eq('id', adId);
+    loadAdminAds();
+    loadPosts();
+  }
+  window.toggleAdActive = async (adId, newState) => {
+    await _supabase.from('ads').update({ active: newState }).eq('id', adId);
+    loadAdminAds();
+    loadPosts();
+  }
+
+  // ---------- Announcements (Admin posts) ----------
+  document.getElementById('announcement-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) { alert('You must be logged in'); return; }
+    const title = document.getElementById('announce-title').value;
+    const content = document.getElementById('announce-content').value.trim();
+    if (!content) { alert('Content cannot be empty'); return; }
+    const { error } = await _supabase.from('posts').insert([
+      { user_id: currentUser.id, title, content, image_url: null }
+    ]);
+    if (error) alert('Error posting announcement: ' + error.message);
+    else {
+      document.getElementById('announce-title').value = '';
+      document.getElementById('announce-content').value = '';
+      alert('Announcement posted!');
+      loadPosts(); // refresh feed
+    }
+  });
+
+  window.postWelcomeMessage = async function() {
+    if (!currentUser) { alert('You must be logged in'); return; }
+    const title = '👋 Welcome to Chirp!';
+    const content = 'We’re so glad you’re here. Feel free to post, like, comment, and share. If you have any questions, just ask. Enjoy!';
+    document.getElementById('announce-title').value = title;
+    document.getElementById('announce-content').value = content;
+    // Automatically submit the form
+    document.getElementById('announcement-form').dispatchEvent(new Event('submit'));
+  }
+
+  // Analytics Chart
+  async function initAnalyticsChart() {
+    const ctx = document.getElementById('analytics-chart').getContext('2d');
+    if (analyticsChart) analyticsChart.destroy();
+
+    const labels = [];
+    const postsData = [];
+    const likesData = [];
+    const commentsData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayStart = date.toISOString().split('T')[0] + 'T00:00:00';
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const dayEnd = nextDay.toISOString().split('T')[0] + 'T00:00:00';
+      labels.push(dayStart.slice(5,10));
+
+      const { count: postsCount } = await _supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', dayStart)
+        .lt('created_at', dayEnd);
+      postsData.push(postsCount || 0);
+
+      const { count: likesCount } = await _supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', dayStart)
+        .lt('created_at', dayEnd);
+      likesData.push(likesCount || 0);
+
+      const { count: commentsCount } = await _supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', dayStart)
+        .lt('created_at', dayEnd);
+      commentsData.push(commentsCount || 0);
+    }
+
+    analyticsChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Posts', data: postsData, borderColor: 'rgb(59, 130, 246)', tension: 0.1 },
+          { label: 'Likes', data: likesData, borderColor: 'rgb(239, 68, 68)', tension: 0.1 },
+          { label: 'Comments', data: commentsData, borderColor: 'rgb(16, 185, 129)', tension: 0.1 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  // ---------- Auth listeners ----------
+  _supabase.auth.getSession().then(({ data: { session } }) => {
+    currentUser = session?.user ?? null;
+    updateAuthUI(currentUser);
+  });
+  _supabase.auth.onAuthStateChange((event, session) => {
+    currentUser = session?.user ?? null;
+    updateAuthUI(currentUser);
+  });
 </script>
+
+<!-- SQL Schema (run in Supabase SQL editor) -->
+<!--
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE NOT NULL,
+  avatar_url TEXT,
+  is_admin BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT,
+  content TEXT NOT NULL,
+  image_url TEXT,
+  views INTEGER DEFAULT 0,
+  monetization_requested BOOLEAN DEFAULT false,
+  monetization_approved BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE likes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE shares (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE ads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  image_url TEXT NOT NULL,
+  link_url TEXT,
+  promoted_text TEXT DEFAULT 'Promoted',
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION increment_post_view(post_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  new_views INTEGER;
+BEGIN
+  UPDATE posts SET views = views + 1 WHERE id = post_id RETURNING views INTO new_views;
+  IF new_views >= 500 THEN
+    UPDATE posts SET monetization_requested = true WHERE id = post_id AND monetization_requested = false;
+  END IF;
+  RETURN new_views;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-->
 </body>
 </html>
